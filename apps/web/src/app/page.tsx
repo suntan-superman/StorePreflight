@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <div className="relative">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-white to-gray-50 py-20">
+      <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
             StorePreflight
@@ -29,7 +29,7 @@ export default function HomePage() {
       </section>
 
       {/* Problem Section */}
-      <section className="py-16 bg-white">
+      <section className="pt-6 pb-10 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
             The Problem
@@ -51,9 +51,9 @@ export default function HomePage() {
       </section>
 
       {/* Solution Section */}
-      <section id="how-it-works" className="py-16 bg-gray-50">
+      <section id="how-it-works" className="pt-6 pb-10 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">
             The Solution
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
@@ -82,9 +82,9 @@ export default function HomePage() {
       </section>
 
       {/* What We Detect Section */}
-      <section className="py-16 bg-white">
+      <section className="pt-6 pb-10 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">
             What We Detect
           </h2>
           <div className="grid sm:grid-cols-3 gap-4">
@@ -115,7 +115,7 @@ export default function HomePage() {
       </section>
 
       {/* Who It's For */}
-      <section className="py-16 bg-gray-50">
+      <section className="pt-6 pb-10 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-8">
             Who It's For

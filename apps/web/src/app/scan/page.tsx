@@ -10,6 +10,8 @@ import {
   type RuleEvaluationResult,
   type GateFinding,
 } from "@/lib/browser-scanner";
+import { InfoModal } from "@/components/Modal";
+import { useToast } from "@/components/Toast";
 
 type ScanStatus = "idle" | "selecting" | "scanning" | "complete" | "error";
 
@@ -19,6 +21,8 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedFinding, setSelectedFinding] = useState<GateFinding | null>(null);
   const [fileCount, setFileCount] = useState<number>(0);
+  const [showPreScanModal, setShowPreScanModal] = useState(false);
+  const { addToast } = useToast();
 
   const handleSelectFolder = async () => {
     setStatus("selecting");
@@ -54,12 +58,46 @@ export default function ScanPage() {
       // Evaluate rules
       const evaluation = evaluateRules(scanResult);
 
+      // Save to localStorage for export page
+      const timestamp = new Date().toISOString();
+      localStorage.setItem("storepreflight_scan_result", JSON.stringify({
+        result: evaluation,
+        timestamp,
+      }));
+
+      // Save to history
+      const historyKey = "storepreflight_scan_history";
+      const existingHistory = JSON.parse(localStorage.getItem(historyKey) || "[]");
+      const newEntry = {
+        id: `scan-${Date.now()}`,
+        result: evaluation,
+        timestamp,
+      };
+      // Add to front, limit to 10 entries
+      const updatedHistory = [newEntry, ...existingHistory].slice(0, 10);
+      localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+
       setResult(evaluation);
       setStatus("complete");
+      
+      // Show success toast
+      addToast({
+        type: evaluation.summary.blocked ? "warning" : "success",
+        title: "Scan Complete",
+        message: evaluation.summary.blocked 
+          ? `Found ${evaluation.summary.high} high-risk issues` 
+          : "Your app is store-ready!",
+        duration: 5000,
+      });
     } catch (err) {
       console.error("Scan error:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
       setStatus("error");
+      addToast({
+        type: "error",
+        title: "Scan Failed",
+        message: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   };
 
@@ -91,7 +129,7 @@ export default function ScanPage() {
             </p>
           </div>
           <button
-            onClick={handleSelectFolder}
+            onClick={() => setShowPreScanModal(true)}
             disabled={status === "selecting" || status === "scanning"}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
@@ -109,6 +147,59 @@ export default function ScanPage() {
           </div>
         )}
       </div>
+
+      {/* Pre-Scan Info Modal */}
+      <InfoModal
+        isOpen={showPreScanModal}
+        onClose={() => setShowPreScanModal(false)}
+        onContinue={handleSelectFolder}
+        title="Select Your Project"
+        continueText="Choose Folder"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">🔒</span>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900">100% Private & Secure</h3>
+              <p className="text-sm text-gray-500">
+                All scanning happens locally in your browser. Your code never leaves your computer.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">📁</span>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900">Grant Read Access</h3>
+              <p className="text-sm text-gray-500">
+                Your browser will ask permission to read your project folder. We only need read access to scan your source files.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">⚡</span>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-900">What We Scan</h3>
+              <p className="text-sm text-gray-500">
+                app.json, app.config.js, package.json, and source files in src/, app/, components/, screens/, lib/, hooks/ folders.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3 mt-4">
+            <p className="text-xs text-gray-500">
+              <strong>Tip:</strong> Select your project&apos;s root folder — the one containing your app.json or app.config.js file.
+            </p>
+          </div>
+        </div>
+      </InfoModal>
 
       {/* Scanning Status */}
       {status === "scanning" && (
