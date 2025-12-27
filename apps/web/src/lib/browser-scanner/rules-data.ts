@@ -1,0 +1,393 @@
+/**
+ * Rules Data - Embedded for browser use
+ * These rules are bundled with the client-side app
+ */
+
+import type { Rule } from "./types";
+
+export const rules: Rule[] = [
+  {
+    id: "GOOGLE_BG_LOCATION",
+    platform: "google",
+    trigger: ["location_background"],
+    risk: "high",
+    requires: {
+      video: true,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      appPurpose:
+        "This application is designed for field-service and route management, helping service providers such as delivery drivers, technicians, and mobile workforces plan optimized routes, navigate to service locations, and track job progress during active work sessions.",
+      permissionJustification:
+        "Background location access is required so the app can continue tracking route progress while a user is driving or navigating between service locations, even when the app is not actively open. This ensures accurate route monitoring, service verification, and operational visibility without requiring the user to keep the app in the foreground at all times.",
+      reviewerNotes:
+        "Background location is only collected during active work sessions. Location data is not used for advertising, marketing, or analytics unrelated to core app operations. Users can control location permissions at any time via device settings.",
+    },
+  },
+  {
+    id: "GOOGLE_FG_LOCATION",
+    platform: "google",
+    trigger: ["location_foreground"],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "Foreground location access is used to display the user's current position on maps, provide turn-by-turn navigation, and verify arrival at designated locations during active use of the app.",
+      reviewerNotes:
+        "Location is accessed only while the user is actively using the app to perform navigation or location-related tasks.",
+    },
+  },
+  {
+    id: "GOOGLE_NOTIFICATIONS",
+    platform: "google",
+    trigger: ["notifications"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: false,
+    },
+    copy: {
+      permissionJustification:
+        "Notifications are used to inform users about important updates, status changes, and time-sensitive alerts related to their app activity.",
+    },
+  },
+  {
+    id: "GOOGLE_ACCOUNT_DELETION",
+    platform: "google",
+    trigger: ["authentication"],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: true,
+      reviewerNotes: true,
+    },
+    copy: {
+      reviewerNotes:
+        "Users can delete their account directly within the app via the account settings screen. Account deletion permanently removes user data in accordance with the app's privacy policy.",
+    },
+  },
+  {
+    id: "GOOGLE_SCREENSHOT_COMPLIANCE",
+    platform: "google",
+    trigger: [],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: true,
+      reviewerNotes: false,
+    },
+    copy: {
+      reviewerNotes:
+        "Google Play screenshots must be 16:9 or 9:16 aspect ratio, with each side between 320px and 3840px. For promotion eligibility, screenshots must be at least 1080px on the shortest side.",
+    },
+  },
+  {
+    id: "GOOGLE_CAMERA",
+    platform: "google",
+    trigger: ["camera"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "Camera access is used to capture photos for documentation, profile pictures, or scanning purposes as part of the core app functionality.",
+      reviewerNotes:
+        "Camera is only accessed when the user explicitly initiates a photo capture action within the app.",
+    },
+  },
+  {
+    id: "GOOGLE_MICROPHONE",
+    platform: "google",
+    trigger: ["microphone"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "Microphone access is used for audio recording, voice notes, or real-time communication features within the app.",
+      reviewerNotes:
+        "Microphone is only accessed when the user explicitly initiates an audio recording or voice feature.",
+    },
+  },
+  {
+    id: "GOOGLE_BACKGROUND_TASKS",
+    platform: "google",
+    trigger: ["background_tasks"],
+    risk: "high",
+    requires: {
+      video: true,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "Background task execution is required to perform essential operations such as syncing data, processing uploads, or maintaining critical app state when the app is not in the foreground.",
+      reviewerNotes:
+        "Background tasks are limited to essential operations and do not drain battery unnecessarily. Users maintain full control over background activity through system settings.",
+    },
+  },
+  {
+    id: "GOOGLE_PAYMENTS",
+    platform: "google",
+    trigger: ["payments"],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: true,
+      reviewerNotes: true,
+    },
+    copy: {
+      reviewerNotes:
+        "The app uses Google Play Billing for in-app purchases or Stripe for external payment processing where permitted. All payment flows comply with Google Play's payment policy.",
+    },
+  },
+  {
+    id: "GOOGLE_MAPS_SDK",
+    platform: "google",
+    trigger: ["maps"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: false,
+    },
+    copy: {
+      permissionJustification:
+        "Maps are used to display locations, provide navigation, and visualize geographic data relevant to the app's core functionality.",
+    },
+  },
+  {
+    id: "GOOGLE_ANALYTICS",
+    platform: "google",
+    trigger: ["analytics"],
+    risk: "low",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: false,
+    },
+    copy: {
+      dataSafety:
+        "Analytics data is collected to understand app usage patterns and improve user experience. Data is processed in accordance with our privacy policy and applicable data protection regulations.",
+    },
+  },
+  {
+    id: "GOOGLE_PHOTO_LIBRARY",
+    platform: "google",
+    trigger: ["photo_library"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "Photo library access is used to allow users to select and upload images from their device for use within the app.",
+      reviewerNotes:
+        "Photo access is only used when the user explicitly selects images through the system picker.",
+    },
+  },
+  {
+    id: "GOOGLE_FILE_STORAGE",
+    platform: "google",
+    trigger: ["file_storage"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "File storage access is used to save and retrieve documents, exports, or user-generated content as part of the app's functionality.",
+      reviewerNotes:
+        "File access is limited to app-specific directories or user-selected files through the system file picker.",
+    },
+  },
+  {
+    id: "APPLE_BG_LOCATION",
+    platform: "apple",
+    trigger: ["location_background"],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: true,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "This app requires Always location access to continue tracking your route progress while navigating between locations, even when the app is in the background. This ensures accurate tracking without requiring you to keep the app open.",
+      reviewerNotes:
+        "Background location is essential for the app's core navigation and route tracking functionality. The app displays a blue bar indicator when using background location. Users are clearly informed about location usage during onboarding.",
+    },
+  },
+  {
+    id: "APPLE_FG_LOCATION",
+    platform: "apple",
+    trigger: ["location_foreground"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "This app uses your location to show your current position on the map and provide navigation to your destinations.",
+      reviewerNotes:
+        "Location is only accessed while the app is in use. The permission dialog clearly explains why location access is needed.",
+    },
+  },
+  {
+    id: "APPLE_NOTIFICATIONS",
+    platform: "apple",
+    trigger: ["notifications"],
+    risk: "low",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: false,
+    },
+    copy: {
+      permissionJustification:
+        "This app sends notifications to keep you informed about important updates and time-sensitive information.",
+    },
+  },
+  {
+    id: "APPLE_CAMERA",
+    platform: "apple",
+    trigger: ["camera"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "This app uses the camera to capture photos for documentation and to enable features that require image capture.",
+      reviewerNotes:
+        "Camera access is only requested when the user initiates a photo capture action. The permission purpose string clearly explains the usage.",
+    },
+  },
+  {
+    id: "APPLE_MICROPHONE",
+    platform: "apple",
+    trigger: ["microphone"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      permissionJustification:
+        "This app uses the microphone to record audio for voice notes or enable real-time communication features.",
+      reviewerNotes:
+        "Microphone access is only requested when the user initiates an audio recording. The permission purpose string clearly explains the usage.",
+    },
+  },
+  {
+    id: "APPLE_PHOTO_LIBRARY",
+    platform: "apple",
+    trigger: ["photo_library"],
+    risk: "medium",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: false,
+    },
+    copy: {
+      permissionJustification:
+        "This app accesses your photo library to let you select and upload images for use within the app.",
+    },
+  },
+  {
+    id: "APPLE_PAYMENTS",
+    platform: "apple",
+    trigger: ["payments"],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: true,
+      reviewerNotes: true,
+    },
+    copy: {
+      reviewerNotes:
+        "The app uses Apple's In-App Purchase system for all digital goods and subscriptions. Physical goods or services rendered outside the app may use external payment processors where permitted by Apple's guidelines.",
+    },
+  },
+  {
+    id: "APPLE_AUTHENTICATION",
+    platform: "apple",
+    trigger: ["authentication"],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: true,
+      reviewerNotes: true,
+    },
+    copy: {
+      reviewerNotes:
+        "The app provides Sign in with Apple as a login option alongside other authentication methods. Users can manage their account and delete their data through the account settings screen.",
+    },
+  },
+  {
+    id: "APPLE_BACKGROUND_TASKS",
+    platform: "apple",
+    trigger: ["background_tasks"],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      reviewerNotes:
+        "The app uses background app refresh to sync data and process updates while not in active use. This is essential for maintaining data accuracy and timely notifications.",
+    },
+  },
+  {
+    id: "APPLE_EXPORT_COMPLIANCE",
+    platform: "apple",
+    trigger: [],
+    risk: "low",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: true,
+    },
+    copy: {
+      reviewerNotes:
+        "This app uses standard HTTPS/TLS encryption for network communications. It does not use proprietary encryption algorithms and qualifies for the encryption exemption under ECCN 5D002.",
+    },
+  },
+  {
+    id: "PRIVACY_POLICY_REQUIRED",
+    platform: "both",
+    trigger: [],
+    risk: "high",
+    requires: {
+      video: false,
+      screenshots: false,
+      reviewerNotes: false,
+    },
+    copy: {
+      reviewerNotes:
+        "A privacy policy URL must be provided in both App Store Connect and Google Play Console. The privacy policy must be publicly accessible and clearly describe data collection, usage, and sharing practices.",
+    },
+  },
+];
