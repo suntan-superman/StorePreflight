@@ -49,6 +49,14 @@ export interface ScanResult {
 export type Platform = "google" | "apple" | "both";
 export type RiskLevel = "low" | "medium" | "high";
 
+/**
+ * Submission intent - determines which steps/rules apply
+ */
+export type SubmissionIntent = 
+  | "internal_testing"
+  | "external_testing"
+  | "production";
+
 export interface Rule {
   id: string;
   platform: Platform;

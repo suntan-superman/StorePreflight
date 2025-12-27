@@ -28,7 +28,9 @@ import {
   updateStepProgress,
   getSessionStats,
   isStepCompleted,
+  getSelectedIntent,
 } from "@/lib/guided-integration";
+import type { SubmissionIntent } from "@storepreflight/shared";
 
 export interface UseGuidedSubmissionOptions {
   /** Auto-load current session on mount */
@@ -125,6 +127,7 @@ export function useGuidedSubmission(
       
       const newFlow = buildGuidedFlow({
         store: sess.store,
+        intent: sess.intent,
         scan,
         evaluation,
         generated: sess.generatedCopy,
@@ -146,17 +149,21 @@ export function useGuidedSubmission(
       copyOverrides?: Partial<GeneratedCopy>
     ) => {
       try {
+        // Get the selected intent from storage
+        const intent = getSelectedIntent();
+        
         const generatedCopy = generateCopyFromFindings(
           store,
           evaluation,
           copyOverrides
         );
-        const newSession = createGuidedSession(store, evaluation, generatedCopy);
+        const newSession = createGuidedSession(store, intent, evaluation, generatedCopy);
 
         // Build flow
         const { scan } = mapToGuidedInput(evaluation);
         const newFlow = buildGuidedFlow({
           store,
+          intent,
           scan,
           evaluation,
           generated: generatedCopy,

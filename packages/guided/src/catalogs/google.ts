@@ -4,9 +4,31 @@
  * 
  * Based on: GOOGLE PLAY GUIDED SUBMISSION MAP.md
  * Rule IDs from: rules.v1.json
+ * 
+ * Intent filtering:
+ * - internal_testing: Only compliance steps (App Content), no store listing
+ * - external_testing: Compliance + minimal store presence
+ * - production: Full requirements including marketing assets
  */
 
+import type { SubmissionIntent } from "@storepreflight/shared";
 import type { GuidedStepTemplate } from "../types";
+
+/** Steps required for ALL submission intents */
+const ALL_INTENTS: SubmissionIntent[] = [
+  "internal_testing",
+  "external_testing",
+  "production",
+];
+
+/** Steps only required for external testing and production */
+const EXTERNAL_AND_PRODUCTION: SubmissionIntent[] = [
+  "external_testing",
+  "production",
+];
+
+/** Steps only required for production release */
+const PRODUCTION_ONLY: SubmissionIntent[] = ["production"];
 
 /**
  * Section ordering for Google Play Console
@@ -27,6 +49,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_APP_ACCESS",
     store: "google",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Content", "App Access"],
     title: "App Access & Login",
     description: "Declare whether your app requires authentication",
@@ -60,6 +83,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_ACCOUNT_DELETION",
     store: "google",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Content", "App Access"],
     title: "Account Deletion",
     description: "Confirm in-app account deletion support",
@@ -92,6 +116,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_LOCATION_FOREGROUND",
     store: "google",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Content", "Location Permissions"],
     title: "Foreground Location Access",
     description: "Declare foreground location usage and provide justification",
@@ -121,6 +146,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_LOCATION_BACKGROUND",
     store: "google",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Content", "Location Permissions"],
     title: "Background Location Access",
     description: "Declare and justify background location usage",
@@ -164,6 +190,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_DATA_SAFETY",
     store: "google",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Content", "Data Safety"],
     title: "Data Safety Declaration",
     description: "Complete Google's Data Safety form with accurate information",
@@ -211,6 +238,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_CAMERA_PERMISSIONS",
     store: "google",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Content", "Sensitive Permissions"],
     title: "Camera Permission",
     description: "Declare camera usage and justification",
@@ -235,6 +263,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_MICROPHONE_PERMISSIONS",
     store: "google",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Content", "Sensitive Permissions"],
     title: "Microphone Permission",
     description: "Declare microphone usage and justification",
@@ -263,6 +292,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_STORE_DETAILS",
     store: "google",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["Store Listing", "Main Store Listing"],
     title: "App Details",
     description: "Confirm app name, description, and category",
@@ -296,6 +326,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_SCREENSHOTS",
     store: "google",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Store Listing", "Screenshots"],
     title: "Upload Screenshots",
     description: "Upload Play-compliant screenshots",
@@ -332,6 +363,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_FEATURE_GRAPHIC",
     store: "google",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Store Listing", "Feature Graphic"],
     title: "Feature Graphic",
     description: "Upload Play Store feature graphic",
@@ -355,6 +387,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_APP_ICON",
     store: "google",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["Store Listing", "App Icon"],
     title: "App Icon",
     description: "Upload high-resolution app icon",
@@ -381,6 +414,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_TESTING",
     store: "google",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["Testing", "Internal Testing"],
     title: "Internal Testing",
     description: "Ensure internal testing track is configured",
@@ -415,6 +449,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_CONTENT_RATING",
     store: "google",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["Review & Publish", "Content Rating"],
     title: "Content Rating",
     description: "Complete content rating questionnaire",
@@ -438,6 +473,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_TARGET_AUDIENCE",
     store: "google",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["Review & Publish", "Target Audience"],
     title: "Target Audience",
     description: "Declare target age group",
@@ -466,6 +502,7 @@ export const googleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "GP_REVIEW_PUBLISH",
     store: "google",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Review & Publish", "Submit"],
     title: "Review & Publish",
     description: "Final review and submit for Google review",

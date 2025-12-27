@@ -3,7 +3,7 @@
  * Type definitions for the guided submission flow engine
  */
 
-import { Capability, Evidence } from "@storepreflight/shared";
+import { Capability, Evidence, SubmissionIntent } from "@storepreflight/shared";
 
 // =============================================================================
 // STORE TARGET
@@ -125,6 +125,11 @@ export interface GuidedStep {
   id: string;
   /** Target store */
   store: StoreTarget;
+  /**
+   * Which submission intents this step applies to.
+   * Inherited from the template but can be filtered at runtime.
+   */
+  appliesTo: SubmissionIntent[];
   /** Path through store UI sections e.g. ["App Content", "Data Safety"] */
   sectionPath: string[];
   /** Step title */
@@ -167,6 +172,13 @@ export interface GuidedStepTemplate {
   id: string;
   /** Target store */
   store: StoreTarget;
+  /**
+   * Which submission intents this step applies to.
+   * If omitted, defaults to ALL intents.
+   * Use ["production"] for store listing, screenshots, marketing.
+   * Use ["internal_testing", "external_testing", "production"] for core compliance.
+   */
+  appliesTo?: SubmissionIntent[];
   /** Path through store UI sections */
   sectionPath: string[];
   /** Step title */
@@ -218,6 +230,8 @@ export interface GuidedFlowSummary {
 export interface GuidedSubmissionFlow {
   /** Target store */
   store: StoreTarget;
+  /** Submission intent */
+  intent: SubmissionIntent;
   /** App name */
   appName: string;
   /** Bundle/package identifier */
@@ -254,6 +268,8 @@ export interface GuidedSession {
   sessionId: string;
   /** Target store */
   store: StoreTarget;
+  /** Submission intent */
+  intent: SubmissionIntent;
   /** App name */
   appName: string;
   /** Bundle/package identifier */
@@ -278,6 +294,8 @@ export interface GuidedSession {
 export interface BuildGuidedFlowInput {
   /** Target store */
   store: StoreTarget;
+  /** Submission intent - determines which steps are included */
+  intent: SubmissionIntent;
   /** Scan results */
   scan: import("@storepreflight/shared").ScanResult;
   /** Rule evaluation results */

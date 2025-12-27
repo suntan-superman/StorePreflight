@@ -18,6 +18,7 @@ import type {
   Evidence,
   RuleEvaluationResult,
   ScanResult,
+  SubmissionIntent,
 } from "@storepreflight/shared";
 
 import type {
@@ -39,11 +40,18 @@ import { appleGuidedCatalog } from "./catalogs/apple";
 // MAIN EXPORT
 // =============================================================================
 
+/** All valid intents for filtering */
+const ALL_INTENTS: SubmissionIntent[] = [
+  "internal_testing",
+  "external_testing",
+  "production",
+];
+
 /**
  * Build a guided submission flow for the specified store
  */
 export function buildGuidedFlow(input: BuildGuidedFlowInput): GuidedSubmissionFlow {
-  const { store, scan, evaluation, generated } = input;
+  const { store, intent, scan, evaluation, generated } = input;
 
   // Select catalog
   const catalog: GuidedStepTemplate[] =
@@ -61,9 +69,9 @@ export function buildGuidedFlow(input: BuildGuidedFlowInput): GuidedSubmissionFl
     evidenceByCap.set(det.capability, det.evidence);
   }
 
-  // Determine active templates
+  // Determine active templates (filtered by intent)
   const activeTemplates = catalog.filter((tpl) =>
-    isTemplateActive(tpl, findingIds, capSet)
+    isTemplateActive(tpl, findingIds, capSet, intent)
   );
 
   // Convert to steps
@@ -176,6 +184,7 @@ export function buildGuidedFlow(input: BuildGuidedFlowInput): GuidedSubmissionFl
     return {
       id: tpl.id,
       store: tpl.store,
+      appliesTo: tpl.appliesTo ?? ALL_INTENTS,
       sectionPath: tpl.sectionPath,
       title: tpl.title,
       description: tpl.description,
@@ -203,6 +212,7 @@ export function buildGuidedFlow(input: BuildGuidedFlowInput): GuidedSubmissionFl
 
   return {
     store,
+    intent,
     appName: scan.appName,
     bundleId: scan.bundleId,
     steps: ordered,
@@ -217,8 +227,16 @@ export function buildGuidedFlow(input: BuildGuidedFlowInput): GuidedSubmissionFl
 function isTemplateActive(
   tpl: GuidedStepTemplate,
   findingIds: Set<string>,
-  capSet: Set<Capability>
+  capSet: Set<Capability>,
+  intent: SubmissionIntent
 ): boolean {
+  // First check intent filter
+  // If appliesTo is undefined or empty, applies to ALL intents
+  // If specified, must include the current intent
+  if (tpl.appliesTo?.length && !tpl.appliesTo.includes(intent)) {
+    return false;
+  }
+
   if (tpl.alwaysInclude) return true;
 
   const ruleHit =

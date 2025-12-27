@@ -9,12 +9,19 @@ import {
   deleteGuidedSession,
 } from "@/lib/guided-integration";
 import type { GuidedSession } from "@storepreflight/guided";
+import type { SubmissionIntent } from "@storepreflight/shared";
+import { SUBMISSION_INTENT_LABELS } from "@storepreflight/shared";
+import { IntentSelector } from "@/components/guided/IntentSelector";
+
+type StoreTarget = "google" | "apple";
 
 export default function GuidedPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<GuidedSession[]>([]);
   const [currentSession, setCurrentSession] = useState<GuidedSession | null>(null);
   const [hasScanResult, setHasScanResult] = useState(false);
+  const [selectedIntent, setSelectedIntent] = useState<SubmissionIntent>("production");
+  const [selectedStore, setSelectedStore] = useState<StoreTarget | null>(null);
 
   useEffect(() => {
     setSessions(getAllGuidedSessions());
@@ -39,6 +46,14 @@ export default function GuidedPage() {
     router.push(`/guided/${session.store}`);
   };
 
+  const handleStartNewSession = () => {
+    if (!selectedStore) return;
+    
+    // Store the selected intent for the session creation
+    localStorage.setItem("storepreflight_selected_intent", selectedIntent);
+    router.push(`/guided/${selectedStore}`);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -55,9 +70,14 @@ export default function GuidedPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Continue Current Session
             </h2>
-            <span className="badge badge-google">
-              {currentSession.store === "google" ? "Google Play" : "App Store"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="badge badge-google">
+                {currentSession.store === "google" ? "Google Play" : "App Store"}
+              </span>
+              <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                {SUBMISSION_INTENT_LABELS[currentSession.intent]}
+              </span>
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <div>
@@ -84,32 +104,78 @@ export default function GuidedPage() {
         </h2>
         
         {hasScanResult ? (
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link
-              href="/guided/google"
-              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-brand hover:bg-brand/5 transition-colors"
+          <div className="space-y-6">
+            {/* Intent Selection */}
+            <IntentSelector
+              value={selectedIntent}
+              onChange={setSelectedIntent}
+            />
+
+            {/* Store Selection */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Select target store
+              </label>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedStore("google")}
+                  className={`
+                    flex items-center gap-4 p-4 border-2 rounded-lg transition-all text-left
+                    ${selectedStore === "google"
+                      ? "border-brand bg-brand/5"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }
+                  `}
+                >
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <span className="text-2xl">🤖</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Google Play</h3>
+                    <p className="text-sm text-gray-500">Play Console submission</p>
+                  </div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setSelectedStore("apple")}
+                  className={`
+                    flex items-center gap-4 p-4 border-2 rounded-lg transition-all text-left
+                    ${selectedStore === "apple"
+                      ? "border-brand bg-brand/5"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }
+                  `}
+                >
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                    <span className="text-2xl">🍎</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">App Store</h3>
+                    <p className="text-sm text-gray-500">App Store Connect submission</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <button
+              onClick={handleStartNewSession}
+              disabled={!selectedStore}
+              className={`
+                w-full py-3 px-4 rounded-lg font-medium transition-colors
+                ${selectedStore
+                  ? "bg-brand text-white hover:bg-brand-dark"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                }
+              `}
             >
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <span className="text-2xl">🤖</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Google Play</h3>
-                <p className="text-sm text-gray-500">Play Console submission</p>
-              </div>
-            </Link>
-            
-            <Link
-              href="/guided/apple"
-              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-brand hover:bg-brand/5 transition-colors"
-            >
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                <span className="text-2xl">🍎</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">App Store</h3>
-                <p className="text-sm text-gray-500">App Store Connect submission</p>
-              </div>
-            </Link>
+              {selectedStore
+                ? `Start ${selectedStore === "google" ? "Google Play" : "App Store"} Submission →`
+                : "Select a store to continue"
+              }
+            </button>
           </div>
         ) : (
           <div className="text-center py-8">
@@ -140,7 +206,12 @@ export default function GuidedPage() {
                     {session.store === "google" ? "🤖" : "🍎"}
                   </span>
                   <div>
-                    <p className="font-medium text-gray-900">{session.appName}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900">{session.appName}</p>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                        {SUBMISSION_INTENT_LABELS[session.intent]}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-500">
                       {new Date(session.createdAt).toLocaleDateString()} •{" "}
                       {session.progress.filter((p) => p.completed).length} steps done

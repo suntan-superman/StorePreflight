@@ -18,6 +18,7 @@ import {
   createGuidedSession,
   saveGuidedSession,
   mapToGuidedInput,
+  getSelectedIntent,
 } from "@/lib/guided-integration";
 import { buildGuidedFlow } from "@storepreflight/guided";
 import type { StoreTarget } from "@storepreflight/guided";
@@ -38,9 +39,12 @@ export default function ScanPage() {
     if (!result) return;
 
     try {
+      // Get the selected intent (defaults to production)
+      const intent = getSelectedIntent();
+      
       // Generate copy and create session
       const generatedCopy = generateCopyFromFindings(store, result);
-      const session = createGuidedSession(store, result, generatedCopy);
+      const session = createGuidedSession(store, intent, result, generatedCopy);
       saveGuidedSession(session);
 
       // Navigate to guided page

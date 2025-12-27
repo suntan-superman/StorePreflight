@@ -8,6 +8,7 @@ import type {
   GateFinding,
   ScanResult,
   Capability,
+  SubmissionIntent,
 } from "@/lib/browser-scanner/types";
 import type {
   StoreTarget,
@@ -24,6 +25,7 @@ import type {
 const STORAGE_KEYS = {
   GUIDED_SESSIONS: "storepreflight_guided_sessions",
   CURRENT_SESSION: "storepreflight_current_guided_session",
+  SELECTED_INTENT: "storepreflight_selected_intent",
 } as const;
 
 // =============================================================================
@@ -178,16 +180,30 @@ export function mapToGuidedInput(evaluation: RuleEvaluationResult): {
 // =============================================================================
 
 /**
+ * Get the selected intent from storage, defaulting to production
+ */
+export function getSelectedIntent(): SubmissionIntent {
+  if (typeof window === "undefined") return "production";
+  const stored = localStorage.getItem(STORAGE_KEYS.SELECTED_INTENT);
+  if (stored === "internal_testing" || stored === "external_testing" || stored === "production") {
+    return stored;
+  }
+  return "production";
+}
+
+/**
  * Create a new guided session
  */
 export function createGuidedSession(
   store: StoreTarget,
+  intent: SubmissionIntent,
   evaluation: RuleEvaluationResult,
   generatedCopy: GeneratedCopy
 ): GuidedSession {
   const session: GuidedSession = {
     sessionId: `guided-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     store,
+    intent,
     appName: evaluation.appName,
     bundleId: evaluation.bundleId,
     createdAt: new Date().toISOString(),

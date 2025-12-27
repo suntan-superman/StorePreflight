@@ -4,9 +4,31 @@
  * 
  * Based on: APP STORE GUIDED SUBMISSION MAP.md
  * Rule IDs from: rules.v1.json
+ * 
+ * Intent filtering:
+ * - internal_testing: Only TestFlight requirements (minimal)
+ * - external_testing: TestFlight + app privacy basics
+ * - production: Full App Store requirements including screenshots
  */
 
+import type { SubmissionIntent } from "@storepreflight/shared";
 import type { GuidedStepTemplate } from "../types";
+
+/** Steps required for ALL submission intents */
+const ALL_INTENTS: SubmissionIntent[] = [
+  "internal_testing",
+  "external_testing",
+  "production",
+];
+
+/** Steps only required for external testing and production */
+const EXTERNAL_AND_PRODUCTION: SubmissionIntent[] = [
+  "external_testing",
+  "production",
+];
+
+/** Steps only required for production release */
+const PRODUCTION_ONLY: SubmissionIntent[] = ["production"];
 
 /**
  * Section ordering for App Store Connect
@@ -29,6 +51,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_APP_INFORMATION",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Information"],
     title: "App Information",
     description: "Verify app name, category, and bundle ID",
@@ -64,6 +87,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_PRIVACY_POLICY",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Privacy"],
     title: "Privacy Policy",
     description: "Provide a valid privacy policy URL",
@@ -93,6 +117,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_DATA_COLLECTION",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Privacy"],
     title: "Data Collection",
     description: "Declare all collected data types",
@@ -137,6 +162,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_DATA_USAGE",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Privacy"],
     title: "Data Usage Purpose",
     description: "Explain why each data type is collected",
@@ -171,6 +197,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_DATA_TRACKING",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Privacy"],
     title: "Tracking Declaration",
     description: "Declare if your app tracks users across apps/websites",
@@ -202,6 +229,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_PRICING",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Pricing & Availability"],
     title: "Pricing",
     description: "Confirm app pricing model",
@@ -225,6 +253,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_AVAILABILITY",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Pricing & Availability"],
     title: "Availability",
     description: "Select territories where app will be available",
@@ -251,6 +280,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_SIGN_IN",
     store: "apple",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Review", "Sign-In Information"],
     title: "Sign-In Information",
     description: "Provide reviewer access credentials",
@@ -287,6 +317,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_REVIEW_NOTES",
     store: "apple",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Review", "Review Notes"],
     title: "Review Notes",
     description: "Explain app behavior, permissions, and special features",
@@ -320,6 +351,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_CONTACT_INFO",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Review", "Contact Information"],
     title: "Contact Information",
     description: "Provide contact details for review team",
@@ -347,6 +379,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_EXPORT_COMPLIANCE",
     store: "apple",
+    appliesTo: ALL_INTENTS,
     sectionPath: ["App Review", "Export Compliance"],
     title: "Export Compliance",
     description: "Declare encryption usage for export regulations",
@@ -381,6 +414,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_CONTENT_RIGHTS",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Review", "Content Rights"],
     title: "Content Rights",
     description: "Confirm you have rights to all app content",
@@ -405,6 +439,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_AGE_RATING",
     store: "apple",
+    appliesTo: EXTERNAL_AND_PRODUCTION,
     sectionPath: ["App Review", "Age Rating"],
     title: "Age Rating",
     description: "Complete age rating questionnaire",
@@ -432,6 +467,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_RELEASE",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Version Release"],
     title: "Release Options",
     description: "Choose how your app is released after approval",
@@ -455,6 +491,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_PHASED_RELEASE",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Version Release"],
     title: "Phased Release",
     description: "Configure phased release for updates",
@@ -478,6 +515,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_SCREENSHOTS",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Submit for Review", "Screenshots"],
     title: "Screenshots",
     description: "Upload App Store screenshots for all device sizes",
@@ -512,6 +550,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_APP_PREVIEW",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Submit for Review", "App Preview"],
     title: "App Preview Video",
     description: "Upload optional app preview video",
@@ -534,6 +573,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_WHATS_NEW",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Submit for Review", "What's New"],
     title: "What's New",
     description: "Describe changes in this version",
@@ -556,6 +596,7 @@ export const appleGuidedCatalog: GuidedStepTemplate[] = [
   {
     id: "ASC_SUBMIT",
     store: "apple",
+    appliesTo: PRODUCTION_ONLY,
     sectionPath: ["Submit for Review"],
     title: "Submit for Review",
     description: "Final review and submit to Apple",

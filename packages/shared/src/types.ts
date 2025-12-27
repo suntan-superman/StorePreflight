@@ -4,6 +4,47 @@
  */
 
 // =============================================================================
+// SUBMISSION INTENT
+// =============================================================================
+
+/**
+ * The developer's goal for a store submission.
+ * This is a first-class concept that affects which rules apply
+ * and which guided steps are required.
+ * 
+ * - internal_testing: TestFlight / Google Play Internal Track
+ *   Minimal requirements - no store listing, screenshots, or marketing
+ * 
+ * - external_testing: Open Beta / Google Play External Track
+ *   May require some metadata but not full production requirements
+ * 
+ * - production: Full App Store / Play Store release
+ *   All requirements including store listing, screenshots, marketing
+ */
+export type SubmissionIntent = 
+  | "internal_testing"
+  | "external_testing"
+  | "production";
+
+/**
+ * Labels for display in UI
+ */
+export const SUBMISSION_INTENT_LABELS: Record<SubmissionIntent, string> = {
+  internal_testing: "Internal Testing",
+  external_testing: "External Testing",
+  production: "Production Release",
+};
+
+/**
+ * Descriptions for each intent
+ */
+export const SUBMISSION_INTENT_DESCRIPTIONS: Record<SubmissionIntent, string> = {
+  internal_testing: "TestFlight or Google Play Internal Track. Minimal setup required.",
+  external_testing: "Open Beta or Google Play External Track. Some metadata required.",
+  production: "Full App Store or Play Store release. Complete setup required.",
+};
+
+// =============================================================================
 // CAPABILITIES
 // =============================================================================
 
@@ -86,6 +127,12 @@ export interface Rule {
   trigger: Capability[];
   /** Risk level - high = blocking */
   risk: RiskLevel;
+  /**
+   * Which submission intents this rule applies to.
+   * If omitted or empty, applies to ALL intents.
+   * If specified, only applies when intent matches.
+   */
+  appliesTo?: SubmissionIntent[];
   /** What artifacts are required */
   requires?: {
     video?: boolean;
