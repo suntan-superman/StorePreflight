@@ -1,12 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "@/components/Toast";
 
 type ContactType = "general" | "bug" | "feature" | "support";
 
+// Wrapper component to handle Suspense requirement for useSearchParams
 export default function ContactPage() {
+  return (
+    <Suspense fallback={<ContactPageLoading />}>
+      <ContactPageContent />
+    </Suspense>
+  );
+}
+
+function ContactPageLoading() {
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-96 mb-8"></div>
+        <div className="card h-96"></div>
+      </div>
+    </div>
+  );
+}
+
+function ContactPageContent() {
   const searchParams = useSearchParams();
   const initialType = (searchParams.get("type") as ContactType) || "general";
   
