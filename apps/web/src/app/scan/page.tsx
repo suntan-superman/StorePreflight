@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   isFileSystemAccessSupported,
   selectProjectFolder,
@@ -12,10 +13,19 @@ import {
 } from "@/lib/browser-scanner";
 import { InfoModal } from "@/components/Modal";
 import { useToast } from "@/components/Toast";
+import {
+  generateCopyFromFindings,
+  createGuidedSession,
+  saveGuidedSession,
+  mapToGuidedInput,
+} from "@/lib/guided-integration";
+import { buildGuidedFlow } from "@storepreflight/guided";
+import type { StoreTarget } from "@storepreflight/guided";
 
 type ScanStatus = "idle" | "selecting" | "scanning" | "complete" | "error";
 
 export default function ScanPage() {
+  const router = useRouter();
   const [status, setStatus] = useState<ScanStatus>("idle");
   const [result, setResult] = useState<RuleEvaluationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +33,27 @@ export default function ScanPage() {
   const [fileCount, setFileCount] = useState<number>(0);
   const [showPreScanModal, setShowPreScanModal] = useState(false);
   const { addToast } = useToast();
+
+  const handleStartGuided = (store: StoreTarget) => {
+    if (!result) return;
+
+    try {
+      // Generate copy and create session
+      const generatedCopy = generateCopyFromFindings(store, result);
+      const session = createGuidedSession(store, result, generatedCopy);
+      saveGuidedSession(session);
+
+      // Navigate to guided page
+      router.push(`/guided/${store}`);
+    } catch (err) {
+      console.error("Failed to start guided submission:", err);
+      addToast({
+        type: "error",
+        title: "Error",
+        message: "Failed to start guided submission. Please try again.",
+      });
+    }
+  };
 
   const handleSelectFolder = async () => {
     setStatus("selecting");
@@ -254,6 +285,32 @@ export default function ScanPage() {
                 label="Low Risk"
                 color="green"
               />
+            </div>
+          </div>
+
+          {/* Guided Submission CTA */}
+          <div className="card bg-gradient-to-r from-brand/5 to-blue-50 border-brand/20">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              🚀 Ready to Submit?
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Start a guided submission flow with step-by-step instructions and copy-paste text for your store listing.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => handleStartGuided("google")}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-brand transition-colors"
+              >
+                <span className="text-lg">🤖</span>
+                <span className="font-medium text-gray-700">Google Play</span>
+              </button>
+              <button
+                onClick={() => handleStartGuided("apple")}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-brand transition-colors"
+              >
+                <span className="text-lg">🍎</span>
+                <span className="font-medium text-gray-700">App Store</span>
+              </button>
             </div>
           </div>
 
