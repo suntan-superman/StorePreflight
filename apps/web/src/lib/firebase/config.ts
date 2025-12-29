@@ -1,9 +1,7 @@
 /**
  * Firebase Configuration
  * 
- * Configuration is loaded from:
- * 1. Environment variables (for production deployments)
- * 2. Local config file (for development) - firebase.config.local.ts
+ * Configuration is loaded from environment variables.
  * 
  * For production, set these environment variables:
  * NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
@@ -12,31 +10,21 @@
  * NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
  * NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
  * NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+ * 
+ * For local development, create firebase.config.local.ts (gitignored)
  */
 
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { firebaseDefaultConfig } from "./firebase.config.default";
 
-// Try to load local config for development (will fail in production - that's OK)
-let localConfig = firebaseDefaultConfig;
-try {
-  // Dynamic import doesn't work at build time, so we use require with try/catch
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const local = require("./firebase.config.local");
-  localConfig = local.firebaseLocalConfig || firebaseDefaultConfig;
-} catch {
-  // Local config doesn't exist - use defaults (production will use env vars)
-}
-
-// Environment variables take priority, then local config, then defaults
+// Load config from environment variables
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || localConfig.apiKey,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || localConfig.authDomain,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || localConfig.projectId,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || localConfig.storageBucket,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || localConfig.messagingSenderId,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || localConfig.appId,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
 };
 
 // Initialize Firebase only once

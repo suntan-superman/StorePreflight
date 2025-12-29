@@ -8,6 +8,7 @@ import { StepDetail } from "@/components/guided/StepDetail";
 import { ProgressBar } from "@/components/guided/ProgressBar";
 import { useToast } from "@/components/Toast";
 import type { StoreTarget } from "@storepreflight/guided";
+import type { RuleEvaluationResult } from "@/lib/browser-scanner/types";
 
 interface PageProps {
   params: Promise<{ store: string }>;
@@ -17,6 +18,7 @@ export default function GuidedWizardPage({ params }: PageProps) {
   const { store } = use(params);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [autoStartAttempted, setAutoStartAttempted] = useState(false);
   const { addToast } = useToast();
   
   // Validate store parameter
@@ -30,7 +32,31 @@ export default function GuidedWizardPage({ params }: PageProps) {
     resetProgress,
     stats,
     isStepComplete,
+    startSession,
   } = useGuidedSubmission();
+
+  // Auto-start session if navigating here with a scan result but no matching session
+  useEffect(() => {
+    if (autoStartAttempted || isLoading || !validStore) return;
+    
+    // Check if we already have a session for this store
+    if (session?.store === validStore) return;
+    
+    // Try to auto-create session from scan result
+    try {
+      const storedScan = localStorage.getItem("storepreflight_scan_result");
+      if (storedScan) {
+        const { result: evaluation } = JSON.parse(storedScan) as {
+          result: RuleEvaluationResult;
+        };
+        startSession(validStore as StoreTarget, evaluation);
+      }
+    } catch (err) {
+      console.error("Failed to auto-start session:", err);
+    }
+    
+    setAutoStartAttempted(true);
+  }, [validStore, session, isLoading, autoStartAttempted, startSession]);
 
   // Derive completed step IDs as a Set for StepList
   const completedStepIds = useMemo(() => {
@@ -250,6 +276,18 @@ export default function GuidedWizardPage({ params }: PageProps) {
 
   // Check if session store matches URL store
   const sessionMatchesStore = session?.store === validStore;
+
+  // Still attempting to auto-start session
+  if (!autoStartAttempted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
+          <p className="text-gray-600">Setting up session...</p>
+        </div>
+      </div>
+    );
+  }
 
   // No session found or wrong store
   if (!flow || !sessionMatchesStore) {
