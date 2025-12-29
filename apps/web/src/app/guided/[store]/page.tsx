@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, use, useCallback } from "react";
+import { useEffect, useState, useMemo, use, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useGuidedSubmission } from "@/hooks/useGuidedSubmission";
 import { StepList } from "@/components/guided/StepList";
@@ -18,7 +18,8 @@ export default function GuidedWizardPage({ params }: PageProps) {
   const { store } = use(params);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [autoStartAttempted, setAutoStartAttempted] = useState(false);
+  const [autoStartStatus, setAutoStartStatus] = useState<"pending" | "started" | "done">("pending");
+  const autoStartRef = useRef(false);
   const { addToast } = useToast();
   
   // Validate store parameter
@@ -37,26 +38,38 @@ export default function GuidedWizardPage({ params }: PageProps) {
 
   // Auto-start session if navigating here with a scan result but no matching session
   useEffect(() => {
-    if (autoStartAttempted || isLoading || !validStore) return;
+    // Wait for hook to finish loading
+    if (isLoading || !validStore) return;
     
-    // Check if we already have a session for this store
-    if (session?.store === validStore) return;
+    // Already have a session for this store - we're done
+    if (session?.store === validStore) {
+      setAutoStartStatus("done");
+      return;
+    }
+    
+    // Prevent double-execution with ref (React StrictMode can run effects twice)
+    if (autoStartRef.current) return;
+    autoStartRef.current = true;
     
     // Try to auto-create session from scan result
     try {
       const storedScan = localStorage.getItem("storepreflight_scan_result");
       if (storedScan) {
+        setAutoStartStatus("started");
         const { result: evaluation } = JSON.parse(storedScan) as {
           result: RuleEvaluationResult;
         };
         startSession(validStore as StoreTarget, evaluation);
+        // Session state will update, triggering re-render and session?.store check above
+      } else {
+        // No scan result, nothing to auto-start
+        setAutoStartStatus("done");
       }
     } catch (err) {
       console.error("Failed to auto-start session:", err);
+      setAutoStartStatus("done");
     }
-    
-    setAutoStartAttempted(true);
-  }, [validStore, session, isLoading, autoStartAttempted, startSession]);
+  }, [validStore, session, isLoading, startSession]);
 
   // Derive completed step IDs as a Set for StepList
   const completedStepIds = useMemo(() => {
@@ -277,8 +290,8 @@ export default function GuidedWizardPage({ params }: PageProps) {
   // Check if session store matches URL store
   const sessionMatchesStore = session?.store === validStore;
 
-  // Still attempting to auto-start session
-  if (!autoStartAttempted) {
+  // Still attempting to auto-start session (pending or started but session not yet set)
+  if (autoStartStatus !== "done" && !sessionMatchesStore) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
