@@ -16,16 +16,27 @@
 
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { firebaseLocalConfig } from "./firebase.config.local";
+import { firebaseDefaultConfig } from "./firebase.config.default";
 
-// Try environment variables first, fall back to local config
+// Try to load local config for development (will fail in production - that's OK)
+let localConfig = firebaseDefaultConfig;
+try {
+  // Dynamic import doesn't work at build time, so we use require with try/catch
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const local = require("./firebase.config.local");
+  localConfig = local.firebaseLocalConfig || firebaseDefaultConfig;
+} catch {
+  // Local config doesn't exist - use defaults (production will use env vars)
+}
+
+// Environment variables take priority, then local config, then defaults
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || firebaseLocalConfig.apiKey,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || firebaseLocalConfig.authDomain,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || firebaseLocalConfig.projectId,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || firebaseLocalConfig.storageBucket,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || firebaseLocalConfig.messagingSenderId,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || firebaseLocalConfig.appId,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || localConfig.apiKey,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || localConfig.authDomain,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || localConfig.projectId,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || localConfig.storageBucket,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || localConfig.messagingSenderId,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || localConfig.appId,
 };
 
 // Initialize Firebase only once
