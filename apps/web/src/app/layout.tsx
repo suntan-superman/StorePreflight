@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
 import { IdentityProvider } from "@/context/IdentityContext";
+import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "StorePreflight - App Store & Play Console Scanner",
@@ -21,32 +22,14 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <IdentityProvider>
           <ToastProvider>
-          <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16">
-                <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                  <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">✓</span>
-                  </div>
-                  <span className="text-xl font-semibold text-gray-900">StorePreflight</span>
-                </a>
-                <nav className="flex items-center gap-1 sm:gap-2">
-                  <NavLink href="/dashboard">Dashboard</NavLink>
-                  <NavLink href="/scan">Scan</NavLink>
-                  <NavLink href="/guided">Guided</NavLink>
-                  <NavLink href="/assets">Assets</NavLink>
-                  <NavLink href="/export">Export</NavLink>
-                </nav>
-              </div>
-            </div>
-          </header>
+          <Header />
           <main className="flex-1">{children}</main>
           <footer className="bg-gray-50 border-t border-gray-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               {/* Trust Statement */}
               <div className="text-center mb-6 pb-6 border-b border-gray-200">
                 <p className="text-sm font-medium text-gray-700">
-                  🔒 Local-first. Intent-aware. No surprises.
+                  {"\uD83D\uDD12"} Local-first. Intent-aware. No surprises.
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Your workflow, your data, your call.
@@ -69,16 +52,5 @@ export default function RootLayout({
         </IdentityProvider>
       </body>
     </html>
-  );
-}
-
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a
-      href={href}
-      className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-    >
-      {children}
-    </a>
   );
 }

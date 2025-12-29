@@ -13,6 +13,7 @@ import {
 } from "@/lib/browser-scanner";
 import { InfoModal } from "@/components/Modal";
 import { useToast } from "@/components/Toast";
+import { EmailSubscribe } from "@/components/EmailSubscribe";
 import {
   generateCopyFromFindings,
   createGuidedSession,
@@ -137,21 +138,21 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Scan Project</h1>
-      <p className="text-gray-600 mb-4">
+    <div className="max-w-6xl px-4 py-12 mx-auto sm:px-6 lg:px-8">
+      <h1 className="mb-2 text-3xl font-bold text-gray-900">Scan Project</h1>
+      <p className="mb-4 text-gray-600">
         Select your Expo or React Native project folder to scan for store requirements.
       </p>
       
       {/* First Run Trust Message */}
-      <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2 mb-8">
-        <span>🔒</span>
+      <div className="flex items-center gap-2 px-4 py-2 mb-8 text-sm text-green-700 border border-green-200 rounded-lg bg-green-50">
+        <span>{"\uD83D\uDD12"}</span>
         <span>StorePreflight runs locally. No login required. Your code never leaves your machine.</span>
       </div>
 
       {/* Browser Support Warning */}
       {typeof window !== "undefined" && !isFileSystemAccessSupported() && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
+        <div className="p-4 mb-8 border rounded-lg bg-amber-50 border-amber-200">
           <p className="text-amber-800">
             <strong>Browser not supported:</strong> Folder selection requires Chrome, Edge, or another Chromium-based browser.
           </p>
@@ -159,10 +160,10 @@ export default function ScanPage() {
       )}
 
       {/* Folder Selection */}
-      <div className="card mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="mb-8 card">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+            <h2 className="mb-1 text-lg font-semibold text-gray-900">
               Project Folder
             </h2>
             <p className="text-sm text-gray-500">
@@ -183,7 +184,7 @@ export default function ScanPage() {
         </div>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="p-3 mt-4 border border-red-200 rounded-lg bg-red-50">
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
@@ -199,8 +200,8 @@ export default function ScanPage() {
       >
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl">🔒</span>
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-green-100 rounded-full">
+              <span className="text-xl">{"\uD83D\uDD12"}</span>
             </div>
             <div>
               <h3 className="font-medium text-gray-900">100% Private & Secure</h3>
@@ -211,7 +212,7 @@ export default function ScanPage() {
           </div>
           
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full">
               <span className="text-xl">📁</span>
             </div>
             <div>
@@ -223,7 +224,7 @@ export default function ScanPage() {
           </div>
           
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full">
               <span className="text-xl">⚡</span>
             </div>
             <div>
@@ -234,7 +235,7 @@ export default function ScanPage() {
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-3 mt-4">
+          <div className="p-3 mt-4 rounded-lg bg-gray-50">
             <p className="text-xs text-gray-500">
               <strong>Tip:</strong> Select your project&apos;s root folder — the one containing your app.json or app.config.js file.
             </p>
@@ -244,11 +245,11 @@ export default function ScanPage() {
 
       {/* Scanning Status */}
       {status === "scanning" && (
-        <div className="card text-center py-12">
-          <div className="animate-spin w-12 h-12 border-4 border-brand border-t-transparent rounded-full mx-auto mb-4"></div>
+        <div className="py-12 text-center card">
+          <div className="w-12 h-12 mx-auto mb-4 border-4 rounded-full animate-spin border-brand border-t-transparent"></div>
           <p className="text-gray-600">Scanning your project...</p>
           {fileCount > 0 && (
-            <p className="text-sm text-gray-400 mt-2">Found {fileCount} files</p>
+            <p className="mt-2 text-sm text-gray-400">Found {fileCount} files</p>
           )}
         </div>
       )}
@@ -264,7 +265,7 @@ export default function ScanPage() {
                   {result.appName}
                 </h2>
                 <p className="text-sm text-gray-500">{result.bundleId}</p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="mt-1 text-xs text-gray-400">
                   Scanned {fileCount} files
                 </p>
               </div>
@@ -300,23 +301,23 @@ export default function ScanPage() {
 
           {/* Guided Submission CTA */}
           <div className="card bg-gradient-to-r from-brand/5 to-blue-50 border-brand/20">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">
               🚀 Ready to Submit?
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="mb-4 text-sm text-gray-600">
               Start a guided submission flow with step-by-step instructions and copy-paste text for your store listing.
             </p>
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => handleStartGuided("google")}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-brand transition-colors"
+                className="flex items-center gap-2 px-4 py-2 transition-colors bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-brand"
               >
                 <span className="text-lg">🤖</span>
                 <span className="font-medium text-gray-700">Google Play</span>
               </button>
               <button
                 onClick={() => handleStartGuided("apple")}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-brand transition-colors"
+                className="flex items-center gap-2 px-4 py-2 transition-colors bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-brand"
               >
                 <span className="text-lg">🍎</span>
                 <span className="font-medium text-gray-700">App Store</span>
@@ -327,7 +328,7 @@ export default function ScanPage() {
           {/* Detected Capabilities */}
           {result.findings.length > 0 && (
             <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">
                 Detected Capabilities
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -336,7 +337,7 @@ export default function ScanPage() {
                 ).map((cap) => (
                   <span
                     key={cap}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                    className="px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-full"
                   >
                     {cap.replace(/_/g, " ")}
                   </span>
@@ -347,12 +348,12 @@ export default function ScanPage() {
 
           {/* Findings List */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">
               Findings ({result.findings.length})
             </h3>
 
             {result.findings.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
+              <p className="py-8 text-center text-gray-500">
                 No findings — your app is ready for submission!
               </p>
             ) : (
@@ -367,6 +368,12 @@ export default function ScanPage() {
               </div>
             )}
           </div>
+
+          {/* Email Subscription - shown after scan completes */}
+          <EmailSubscribe
+            trigger="scan-complete"
+            message="Want to be notified when App Store or Google Play requirements change? We'll let you know if it affects your app."
+          />
         </div>
       )}
 
@@ -463,14 +470,14 @@ function FindingModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
+        <div className="sticky top-0 p-6 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">{finding.id}</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              className="text-2xl leading-none text-gray-400 hover:text-gray-600"
             >
               ×
             </button>
@@ -498,7 +505,7 @@ function FindingModal({
             finding.requires.screenshots ||
             finding.requires.reviewerNotes) && (
             <div>
-              <h3 className="font-medium text-gray-900 mb-2">
+              <h3 className="mb-2 font-medium text-gray-900">
                 Required Artifacts
               </h3>
               <ul className="space-y-1 text-sm">
@@ -524,14 +531,14 @@ function FindingModal({
           {/* Copy-Paste Text */}
           {Object.keys(finding.copy).length > 0 && (
             <div>
-              <h3 className="font-medium text-gray-900 mb-2">
+              <h3 className="mb-2 font-medium text-gray-900">
                 Copy-Paste Text
               </h3>
               <div className="space-y-3">
                 {Object.entries(finding.copy).map(([key, value]) => (
                   <div
                     key={key}
-                    className="bg-green-50 border border-green-200 rounded-lg p-4"
+                    className="p-4 border border-green-200 rounded-lg bg-green-50"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">
@@ -541,7 +548,7 @@ function FindingModal({
                       </span>
                       <button
                         onClick={() => copyToClipboard(key, value)}
-                        className="text-xs text-brand hover:text-brand-dark font-medium"
+                        className="text-xs font-medium text-brand hover:text-brand-dark"
                       >
                         {copiedKey === key ? "✓ Copied!" : "Copy"}
                       </button>
@@ -558,14 +565,14 @@ function FindingModal({
           {/* Evidence */}
           {finding.evidence.length > 0 && (
             <div>
-              <h3 className="font-medium text-gray-900 mb-2">Evidence</h3>
+              <h3 className="mb-2 font-medium text-gray-900">Evidence</h3>
               <div className="space-y-2">
                 {finding.evidence.map((ev, idx) => (
-                  <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                    <code className="text-sm text-gray-700 font-medium">
+                  <div key={idx} className="p-3 rounded-lg bg-gray-50">
+                    <code className="text-sm font-medium text-gray-700">
                       {ev.file}:{ev.lines[0]}
                     </code>
-                    <pre className="mt-2 text-xs text-gray-600 overflow-x-auto whitespace-pre-wrap">
+                    <pre className="mt-2 overflow-x-auto text-xs text-gray-600 whitespace-pre-wrap">
                       {ev.snippet}
                     </pre>
                   </div>

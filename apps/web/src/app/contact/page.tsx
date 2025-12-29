@@ -17,10 +17,10 @@ export default function ContactPage() {
 
 function ContactPageLoading() {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-4xl px-4 py-12 mx-auto sm:px-6 lg:px-8">
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-96 mb-8"></div>
+        <div className="w-48 h-8 mb-2 bg-gray-200 rounded"></div>
+        <div className="h-4 mb-8 bg-gray-200 rounded w-96"></div>
         <div className="card h-96"></div>
       </div>
     </div>
@@ -69,15 +69,15 @@ function ContactPageContent() {
 
   if (isSubmitted) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="card text-center py-12">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="max-w-2xl px-4 py-12 mx-auto sm:px-6 lg:px-8">
+        <div className="py-12 text-center card">
+          <div className="flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-green-100 rounded-full">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Message Sent!</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="mb-2 text-2xl font-bold text-gray-900">Message Sent!</h1>
+          <p className="mb-6 text-gray-600">
             Thank you for reaching out. We typically respond within 24-48 hours.
           </p>
           <div className="flex justify-center gap-4">
@@ -106,21 +106,21 @@ function ContactPageContent() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Contact Us</h1>
-      <p className="text-gray-600 mb-8">
+    <div className="max-w-4xl px-4 py-12 mx-auto sm:px-6 lg:px-8">
+      <h1 className="mb-2 text-3xl font-bold text-gray-900">Contact Us</h1>
+      <p className="mb-8 text-gray-600">
         Have a question, found a bug, or want to suggest a feature? We'd love to hear from you.
       </p>
 
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid gap-8 md:grid-cols-3">
         {/* Contact Form */}
         <div className="md:col-span-2">
           <form onSubmit={handleSubmit} className="card">
             <div className="space-y-5">
               {/* Name & Email */}
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="name" className="block mb-1 text-sm font-medium text-gray-700">
                     Your Name
                   </label>
                   <input
@@ -130,12 +130,12 @@ function ContactPageContent() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent transition-shadow"
+                    className="w-full px-4 py-2 transition-shadow border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
                     placeholder="John Doe"
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">
                     Email Address
                   </label>
                   <input
@@ -145,7 +145,7 @@ function ContactPageContent() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent transition-shadow"
+                    className="w-full px-4 py-2 transition-shadow border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -153,7 +153,7 @@ function ContactPageContent() {
 
               {/* Type */}
               <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="type" className="block mb-1 text-sm font-medium text-gray-700">
                   What's this about?
                 </label>
                 <select
@@ -161,7 +161,7 @@ function ContactPageContent() {
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent transition-shadow bg-white"
+                  className="w-full px-4 py-2 transition-shadow bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
                 >
                   <option value="general">General Inquiry</option>
                   <option value="support">Technical Support</option>
@@ -172,7 +172,7 @@ function ContactPageContent() {
 
               {/* Subject */}
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="subject" className="block mb-1 text-sm font-medium text-gray-700">
                   Subject
                 </label>
                 <input
@@ -182,14 +182,14 @@ function ContactPageContent() {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent transition-shadow"
+                  className="w-full px-4 py-2 transition-shadow border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
                   placeholder="Brief description of your inquiry"
                 />
               </div>
 
               {/* Message */}
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="message" className="block mb-1 text-sm font-medium text-gray-700">
                   Message
                 </label>
                 <textarea
@@ -199,7 +199,7 @@ function ContactPageContent() {
                   onChange={handleChange}
                   required
                   rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent transition-shadow resize-none"
+                  className="w-full px-4 py-2 transition-shadow border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-brand focus:border-transparent"
                   placeholder={
                     formData.type === "bug"
                       ? "Please describe the bug, including steps to reproduce it, expected behavior, and what actually happened..."
@@ -215,11 +215,11 @@ function ContactPageContent() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center gap-2">
-                      <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                      <span className="w-4 h-4 border-2 border-white rounded-full animate-spin border-t-transparent"></span>
                       Sending...
                     </span>
                   ) : (
@@ -234,34 +234,34 @@ function ContactPageContent() {
         {/* Contact Info Sidebar */}
         <div className="space-y-6">
           <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-4">Other Ways to Reach Us</h3>
+            <h3 className="mb-4 font-semibold text-gray-900">Other Ways to Reach Us</h3>
             <div className="space-y-4">
               <ContactMethod
                 icon="📧"
                 label="Email"
-                value="support@worksidesoft.com"
+                value="support@worksidesoftware.com"
                 href="mailto:support@worksidesoft.com"
               />
-              <ContactMethod
+              {/* <ContactMethod
                 icon="🐦"
                 label="Twitter"
-                value="@WorksideSoft"
+                value="@WorksideSoftware"
                 href="https://twitter.com/WorksideSoft"
-              />
+              /> */}
             </div>
           </div>
 
           <div className="card bg-gray-50">
-            <h3 className="font-semibold text-gray-900 mb-2">Response Time</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="mb-2 font-semibold text-gray-900">Response Time</h3>
+            <p className="text-sm text-gray-600">
               We typically respond within 24-48 hours during business days. 
               For urgent issues, please indicate "URGENT" in the subject line.
             </p>
           </div>
 
-          <div className="card bg-blue-50 border-blue-200">
-            <h3 className="font-semibold text-blue-900 mb-2">Looking for Help?</h3>
-            <p className="text-blue-700 text-sm mb-3">
+          <div className="border-blue-200 card bg-blue-50">
+            <h3 className="mb-2 font-semibold text-blue-900">Looking for Help?</h3>
+            <p className="mb-3 text-sm text-blue-700">
               Check out our FAQ and Support pages for quick answers to common questions.
             </p>
             <div className="flex gap-2">
@@ -294,7 +294,7 @@ function ContactMethod({
         <div className="text-sm text-gray-500">{label}</div>
         <a
           href={href}
-          className="text-brand hover:underline font-medium"
+          className="font-medium text-brand hover:underline"
           target={href.startsWith("http") ? "_blank" : undefined}
           rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
         >

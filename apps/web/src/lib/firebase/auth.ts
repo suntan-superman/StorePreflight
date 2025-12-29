@@ -139,6 +139,9 @@ export async function sendMagicLinkEmail(email: string): Promise<boolean> {
     handleCodeInApp: true,
   };
 
+  console.log("[Auth] Sending magic link to:", email);
+  console.log("[Auth] Callback URL:", actionCodeSettings.url);
+
   try {
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
     
@@ -147,9 +150,16 @@ export async function sendMagicLinkEmail(email: string): Promise<boolean> {
       localStorage.setItem(EMAIL_FOR_SIGNIN_KEY, email);
     }
     
+    console.log("[Auth] Magic link sent successfully");
     return true;
-  } catch (error) {
-    console.error("Failed to send magic link:", error);
+  } catch (error: unknown) {
+    const firebaseError = error as { code?: string; message?: string };
+    console.error("[Auth] Failed to send magic link:", {
+      code: firebaseError.code,
+      message: firebaseError.message,
+      fullError: error,
+    });
+    // Don't save as subscribed if send failed
     return false;
   }
 }

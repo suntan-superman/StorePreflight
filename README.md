@@ -1,5 +1,12 @@
 # StorePreflight
 
+npm run build
+npm start
+
+git add .
+git commit -m "Commit Comments"
+git push
+
 **App Store & Google Play Preflight Scanner**
 
 Know what Apple and Google will ask — before they ask.

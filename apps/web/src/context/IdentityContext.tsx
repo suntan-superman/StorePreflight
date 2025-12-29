@@ -75,10 +75,15 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendMagicLink = useCallback(async (email: string): Promise<boolean> => {
-    // First save as subscribed
-    subscribe(email);
-    // Then send the magic link
-    return sendMagicLinkEmail(email);
+    // Send the magic link first
+    const success = await sendMagicLinkEmail(email);
+    
+    // Only mark as subscribed if email actually sent
+    if (success) {
+      subscribe(email);
+    }
+    
+    return success;
   }, [subscribe]);
 
   const signOut = useCallback(async () => {
