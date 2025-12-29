@@ -16,6 +16,7 @@
     "@storepreflight/rules": "*",
     "@storepreflight/scanner": "*",
     "@storepreflight/shared": "*",
+    "firebase": "^11.1.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.469.0",
     "next": "^15.1.3",

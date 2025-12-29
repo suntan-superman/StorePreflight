@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "npx open-cli http://localhost:3000 && npm run dev --workspace=@storepreflight/web",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
@@ -14,8 +15,10 @@
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "open-cli": "^8.0.0",
     "turbo": "^2.3.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "wait-on": "^9.0.3"
   },
   "engines": {
     "node": ">=18"
