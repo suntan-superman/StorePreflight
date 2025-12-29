@@ -17,13 +17,34 @@ export default function HomePage() {
             <br />
             No surprises. No guesswork. No rejections.
           </p>
-          <div className="flex justify-center gap-4">
-            <Link href="/scan" className="btn-primary text-lg">
-              Scan Your Project
-            </Link>
-            <a href="#how-it-works" className="btn-secondary text-lg">
-              Learn More
-            </a>
+          <div className="flex flex-wrap justify-center gap-4">
+            <div className="group relative">
+              <Link href="/scan" className="btn-primary text-lg block">
+                Scan Your Project
+              </Link>
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                Analyze your codebase to detect permissions, SDKs, and policy requirements
+                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
+            <div className="group relative">
+              <Link href="/guided" className="btn-primary text-lg block">
+                Guided Submission
+              </Link>
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                Step-by-step walkthrough for App Store or Google Play submission
+                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
+            <div className="group relative">
+              <a href="#how-it-works" className="btn-primary text-lg block">
+                Learn More
+              </a>
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                See how StorePreflight helps you ship with confidence
+                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

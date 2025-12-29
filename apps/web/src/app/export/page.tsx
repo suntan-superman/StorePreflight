@@ -5,15 +5,11 @@ import { InfoModal } from "@/components/Modal";
 import { useToast } from "@/components/Toast";
 import type { RuleEvaluationResult, GateFinding } from "@/lib/browser-scanner";
 import type { ValidatedAsset } from "@/lib/browser-scanner/asset-validator";
+import { generateSubmissionPack, type StoredAssets } from "@/lib/submission-pack";
 
 interface StoredScanResult {
   result: RuleEvaluationResult;
   timestamp: string;
-}
-
-interface StoredAssets {
-  ios: { screenshots: string[]; icon?: string };
-  android: { screenshots: string[]; icon?: string; feature?: string };
 }
 
 export default function ExportPage() {
@@ -179,13 +175,41 @@ export default function ExportPage() {
         filename = `storepreflight-${scanResult.result.appName.toLowerCase().replace(/\s+/g, "-")}-report.json`;
         mimeType = "application/json";
       } else {
-        // ZIP format - for now just do HTML since we need JSZip library for proper ZIP
-        content = generateHtmlReport(scanResult.result);
-        filename = `storepreflight-${scanResult.result.appName.toLowerCase().replace(/\s+/g, "-")}-report.html`;
-        mimeType = "text/html";
+        // ZIP format - generate full submission pack
+        const storedAssets = localStorage.getItem("storepreflight_assets");
+        let assets: StoredAssets | undefined;
+        if (storedAssets) {
+          try {
+            assets = JSON.parse(storedAssets);
+          } catch {
+            // Invalid data, ignore
+          }
+        }
+
+        const pack = await generateSubmissionPack({
+          result: scanResult.result,
+          assets,
+        });
+
+        // Download the ZIP
+        const url = URL.createObjectURL(pack.blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = pack.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        addToast({
+          type: "success",
+          title: "Submission Pack downloaded",
+          message: `${pack.filename} includes report, checklists, and assets`,
+        });
+        return;
       }
 
-      // Create and download file
+      // Create and download file (HTML/JSON)
       const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
