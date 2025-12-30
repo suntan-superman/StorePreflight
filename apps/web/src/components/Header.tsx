@@ -59,6 +59,7 @@ export function Header() {
               <span className="text-xl font-semibold text-gray-900">StorePreflight</span>
             </a>
             <nav className="flex items-center gap-1 sm:gap-2">
+              <NavLink href="/demo">Demo</NavLink>
               <NavLink href="/dashboard">Dashboard</NavLink>
               <NavLink href="/scan">Scan</NavLink>
               <NavLink href="/guided">Guided</NavLink>
