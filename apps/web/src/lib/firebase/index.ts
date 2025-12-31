@@ -4,6 +4,7 @@ export {
   getCurrentIdentity,
   signInAnonymouslyToFirebase,
   sendMagicLinkEmail,
+  checkEmailExists,
   completeSignInWithEmailLink,
   subscribeEmail,
   signOut,
@@ -11,6 +12,7 @@ export {
   isEmailSignInLink,
   getSubscribedEmail,
 } from "./auth";
+export type { SendMagicLinkResult } from "./auth";
 export type {
   IdentityState,
   AnonymousIdentity,

@@ -20,6 +20,7 @@ import {
 } from "react";
 import {
   type IdentityState,
+  type SendMagicLinkResult,
   getCurrentIdentity,
   onAuthStateChange,
   subscribeEmail as saveSubscribedEmail,
@@ -38,8 +39,8 @@ interface IdentityContextValue {
   isConfigured: boolean;
   /** Subscribe with email (Stage 1 - no account) */
   subscribe: (email: string) => void;
-  /** Send magic link for full authentication */
-  sendMagicLink: (email: string) => Promise<boolean>;
+  /** Send magic link for full authentication - returns result with isExistingUser info */
+  sendMagicLink: (email: string) => Promise<SendMagicLinkResult>;
   /** Sign out */
   signOut: () => Promise<void>;
 }
@@ -74,16 +75,16 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const sendMagicLink = useCallback(async (email: string): Promise<boolean> => {
+  const sendMagicLink = useCallback(async (email: string): Promise<SendMagicLinkResult> => {
     // Send the magic link first
-    const success = await sendMagicLinkEmail(email);
+    const result = await sendMagicLinkEmail(email);
     
     // Only mark as subscribed if email actually sent
-    if (success) {
+    if (result.success) {
       subscribe(email);
     }
     
-    return success;
+    return result;
   }, [subscribe]);
 
   const signOut = useCallback(async () => {

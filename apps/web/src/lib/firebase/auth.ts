@@ -16,6 +16,7 @@ import {
   EmailAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  fetchSignInMethodsForEmail,
   type User,
   type ActionCodeSettings,
 } from "firebase/auth";
@@ -121,13 +122,46 @@ export async function signInAnonymouslyToFirebase(): Promise<User | null> {
 }
 
 /**
- * Send magic link email for sign-in
+ * Result of sending a magic link
  */
-export async function sendMagicLinkEmail(email: string): Promise<boolean> {
+export type SendMagicLinkResult = 
+  | { success: true; isExistingUser: boolean }
+  | { success: false; error: string };
+
+/**
+ * Check if an email is already registered
+ */
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const auth = getFirebaseAuth();
+  if (!auth) return false;
+
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth, email);
+    return methods.length > 0;
+  } catch (error) {
+    console.error("[Auth] Failed to check email:", error);
+    return false;
+  }
+}
+
+/**
+ * Send magic link email for sign-in
+ * Returns detailed result including whether user already exists
+ */
+export async function sendMagicLinkEmail(email: string): Promise<SendMagicLinkResult> {
   const auth = getFirebaseAuth();
   if (!auth) {
     console.warn("Firebase Auth not configured. Cannot send magic link.");
-    return false;
+    return { success: false, error: "Sign-in is not available yet." };
+  }
+
+  // Check if user already exists
+  let isExistingUser = false;
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth, email);
+    isExistingUser = methods.length > 0;
+  } catch (error) {
+    console.warn("[Auth] Could not check if user exists:", error);
   }
 
   // Configure the magic link
@@ -139,7 +173,7 @@ export async function sendMagicLinkEmail(email: string): Promise<boolean> {
     handleCodeInApp: true,
   };
 
-  console.log("[Auth] Sending magic link to:", email);
+  console.log("[Auth] Sending magic link to:", email, isExistingUser ? "(existing user)" : "(new user)");
   console.log("[Auth] Callback URL:", actionCodeSettings.url);
 
   try {
@@ -151,7 +185,7 @@ export async function sendMagicLinkEmail(email: string): Promise<boolean> {
     }
     
     console.log("[Auth] Magic link sent successfully");
-    return true;
+    return { success: true, isExistingUser };
   } catch (error: unknown) {
     const firebaseError = error as { code?: string; message?: string };
     console.error("[Auth] Failed to send magic link:", {
@@ -159,8 +193,7 @@ export async function sendMagicLinkEmail(email: string): Promise<boolean> {
       message: firebaseError.message,
       fullError: error,
     });
-    // Don't save as subscribed if send failed
-    return false;
+    return { success: false, error: "Failed to send sign-in link. Please try again." };
   }
 }
 

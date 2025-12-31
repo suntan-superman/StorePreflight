@@ -15,6 +15,7 @@ export function Header() {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSendLink = async (e: React.FormEvent) => {
@@ -30,13 +31,14 @@ export function Header() {
     }
 
     setIsSending(true);
-    const success = await sendMagicLink(email.trim());
+    const result = await sendMagicLink(email.trim());
     setIsSending(false);
 
-    if (success) {
+    if (result.success) {
+      setIsExistingUser(result.isExistingUser);
       setLinkSent(true);
     } else {
-      setError("Failed to send sign-in link. Please check your email and try again.");
+      setError(result.error);
     }
   };
 
@@ -141,15 +143,27 @@ export function Header() {
               <>
                 <div className="text-center">
                   <div className="text-5xl mb-4">{"\u2709"}</div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Check Your Email</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                    {isExistingUser ? "Welcome Back!" : "Check Your Email"}
+                  </h2>
                   <p className="text-gray-600 mb-6">
-                    We sent a sign-in link to <strong>{email}</strong>. Click the link in the email to sign in.
+                    {isExistingUser ? (
+                      <>
+                        We found your account! A sign-in link has been sent to <strong>{email}</strong>. 
+                        Click the link in the email to sign in.
+                      </>
+                    ) : (
+                      <>
+                        We sent a sign-in link to <strong>{email}</strong>. Click the link in the email to create your account and sign in.
+                      </>
+                    )}
                   </p>
                   <button
                     onClick={() => {
                       setShowSignInModal(false);
                       setLinkSent(false);
                       setEmail("");
+                      setIsExistingUser(false);
                     }}
                     className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
                   >
