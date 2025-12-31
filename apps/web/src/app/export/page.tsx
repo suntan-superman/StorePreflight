@@ -337,8 +337,6 @@ export default function ExportPage() {
                 icon="📁"
                 selected={exportFormat === "zip"}
                 onSelect={() => setExportFormat("zip")}
-                disabled
-                badge="Coming Soon"
               />
             </div>
 
