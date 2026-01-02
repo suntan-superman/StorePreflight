@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, use, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useGuidedSubmission } from "@/hooks/useGuidedSubmission";
 import { StepList } from "@/components/guided/StepList";
 import { StepDetail } from "@/components/guided/StepDetail";
@@ -16,9 +17,13 @@ interface PageProps {
 
 export default function GuidedWizardPage({ params }: PageProps) {
   const { store } = use(params);
+  const searchParams = useSearchParams();
+  const stepFromQuery = searchParams.get("step"); // Deep-link to specific step
+  
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [autoStartStatus, setAutoStartStatus] = useState<"pending" | "started" | "done">("pending");
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
   const autoStartRef = useRef(false);
   const { addToast } = useToast();
   
@@ -99,9 +104,29 @@ export default function GuidedWizardPage({ params }: PageProps) {
     return copy;
   }, [session]);
 
-  // Select first incomplete step on load
+  // Handle deep-link from query parameter (e.g., ?step=ASC_EXPORT_COMPLIANCE)
   useEffect(() => {
-    if (flow && flow.steps.length > 0 && !selectedStepId) {
+    if (!flow || !stepFromQuery || deepLinkHandled) return;
+    
+    // Find the step from query param
+    const targetStep = flow.steps.find((s) => s.id === stepFromQuery);
+    if (targetStep) {
+      setSelectedStepId(targetStep.id);
+      setDeepLinkHandled(true);
+      
+      // Show toast to confirm navigation
+      addToast({
+        type: "info",
+        title: "Navigated to Step",
+        message: `${targetStep.sectionPath.join(" → ")}: ${targetStep.title}`,
+        duration: 4000,
+      });
+    }
+  }, [flow, stepFromQuery, deepLinkHandled, addToast]);
+
+  // Select first incomplete step on load (if no deep-link)
+  useEffect(() => {
+    if (flow && flow.steps.length > 0 && !selectedStepId && !stepFromQuery) {
       // Find first incomplete step
       const firstIncomplete = flow.steps.find(
         (s) => !isStepComplete(s.id)
@@ -111,7 +136,7 @@ export default function GuidedWizardPage({ params }: PageProps) {
         setSelectedStepId(firstIncomplete?.id || firstStep.id);
       }
     }
-  }, [flow, isStepComplete, selectedStepId]);
+  }, [flow, isStepComplete, selectedStepId, stepFromQuery]);
 
   // Get current step
   const selectedStep = useMemo(() => {

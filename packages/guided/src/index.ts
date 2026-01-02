@@ -29,6 +29,15 @@ export { buildGuidedFlow } from "./engine";
 // Copy Builder
 export { buildGeneratedCopy } from "./copy-builder";
 
+// Step Mapping (for deep-linking from findings to steps)
+export type { StepMapping, DeepLinkInfo } from "./step-mapping";
+export {
+  getStepMappingForRule,
+  getDeepLinkForFinding,
+  getDeepLinksForFindings,
+  hasGuidedStep,
+} from "./step-mapping";
+
 // Catalogs
 export { googleGuidedCatalog, GOOGLE_SECTION_ORDER } from "./catalogs/google";
 export { appleGuidedCatalog, APPLE_SECTION_ORDER } from "./catalogs/apple";

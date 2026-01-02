@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Modal } from "@/components/Modal";
 import { useToast } from "@/components/Toast";
+import { getDeepLinkForFinding, type DeepLinkInfo } from "@storepreflight/guided";
 import type { RuleEvaluationResult, GateFinding } from "@/lib/browser-scanner";
 
 interface ScanHistoryEntry {
@@ -532,34 +534,60 @@ function EntryDetailModal({
             Findings ({result.findings.length})
           </h3>
           <div className="max-h-64 overflow-y-auto space-y-2">
-            {result.findings.map((finding) => (
-              <button
-                key={finding.id}
-                onClick={() => setSelectedFinding(finding)}
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                  finding.isBlocking
-                    ? "border-red-200 bg-red-50 hover:bg-red-100"
-                    : "border-gray-200 hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{finding.id}</span>
-                  <div className="flex gap-1">
-                    <span className={`badge text-xs ${finding.platform === "google" ? "badge-google" : finding.platform === "apple" ? "badge-apple" : "bg-purple-100 text-purple-800"}`}>
-                      {finding.platform.toUpperCase()}
-                    </span>
-                    <span className={`badge text-xs badge-${finding.risk}`}>
-                      {finding.risk.toUpperCase()}
-                    </span>
+            {result.findings.map((finding) => {
+              const deepLink = getDeepLinkForFinding(
+                finding.id,
+                finding.platform === "both" ? undefined : finding.platform as "apple" | "google"
+              );
+              
+              return (
+                <div
+                  key={finding.id}
+                  className={`p-3 rounded-lg border transition-colors ${
+                    finding.isBlocking
+                      ? "border-red-200 bg-red-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setSelectedFinding(finding)}
+                      className="flex-1 text-left hover:opacity-70 transition-opacity"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{finding.id}</span>
+                        <div className="flex gap-1">
+                          <span className={`badge text-xs ${finding.platform === "google" ? "badge-google" : finding.platform === "apple" ? "badge-apple" : "bg-purple-100 text-purple-800"}`}>
+                            {finding.platform.toUpperCase()}
+                          </span>
+                          <span className={`badge text-xs badge-${finding.risk}`}>
+                            {finding.risk.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      {finding.triggers.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {finding.triggers.join(", ")}
+                        </p>
+                      )}
+                    </button>
+                    
+                    {/* Quick deep-link button */}
+                    {deepLink && (
+                      <Link
+                        href={deepLink.url}
+                        className="ml-2 p-1.5 text-brand hover:bg-brand/10 rounded-lg transition-colors flex-shrink-0"
+                        title={`Go to: ${deepLink.sectionLabel} → ${deepLink.stepTitle}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </Link>
+                    )}
                   </div>
                 </div>
-                {finding.triggers.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {finding.triggers.join(", ")}
-                  </p>
-                )}
-              </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -594,6 +622,13 @@ function FindingDetailModal({
 }) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const { addToast } = useToast();
+  
+  // Get deep link for this finding
+  const deepLink = useMemo<DeepLinkInfo | undefined>(() => {
+    // Try the specific platform first, then fall back to inferred
+    const platformLink = getDeepLinkForFinding(finding.id, finding.platform === "both" ? undefined : finding.platform as "apple" | "google");
+    return platformLink;
+  }, [finding.id, finding.platform]);
 
   const copyToClipboard = async (key: string, text: string) => {
     await navigator.clipboard.writeText(text);
@@ -653,6 +688,36 @@ function FindingDetailModal({
                   </li>
                 )}
               </ul>
+            </div>
+          )}
+
+          {/* Deep Link to Guided Submission */}
+          {deepLink && (
+            <div className="bg-brand/5 border border-brand/20 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-brand/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl">🎯</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900 mb-1">
+                    Fix This in Guided Submission
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    <span className="font-medium">{deepLink.sectionLabel}</span>
+                    <span className="mx-1">→</span>
+                    <span>{deepLink.stepTitle}</span>
+                  </p>
+                  <Link
+                    href={deepLink.url}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand hover:bg-brand-dark rounded-lg transition-colors"
+                  >
+                    Go to Step
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </Link>
+                </div>
+              </div>
             </div>
           )}
 
