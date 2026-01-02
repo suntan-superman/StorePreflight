@@ -19,7 +19,7 @@ export function StepList({
   const sections = groupStepsBySection(steps);
 
   return (
-    <nav className="h-full overflow-y-auto bg-gray-50 border-r border-gray-200">
+    <nav className="h-full overflow-y-auto bg-gray-50">
       <div className="p-4 space-y-4">
         {sections.map((section) => (
           <div key={section.name}>
@@ -30,6 +30,7 @@ export function StepList({
               {section.steps.map((step) => {
                 const isSelected = step.id === selectedStepId;
                 const isCompleted = completedStepIds.has(step.id);
+                const hasFindings = step.triggeredByRuleIds.length > 0;
 
                 return (
                   <li key={step.id}>
@@ -40,6 +41,8 @@ export function StepList({
                           ? "bg-brand text-white"
                           : isCompleted
                           ? "bg-green-50 text-green-800 hover:bg-green-100"
+                          : hasFindings && !isCompleted
+                          ? "bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200"
                           : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
@@ -47,6 +50,8 @@ export function StepList({
                       <span className="flex-shrink-0">
                         {isCompleted ? (
                           <span className={isSelected ? "text-white" : "text-green-600"}>✓</span>
+                        ) : hasFindings ? (
+                          <span className={isSelected ? "text-white" : "text-amber-600"}>⚠</span>
                         ) : step.blocking ? (
                           <span className={isSelected ? "text-white" : "text-red-500"}>●</span>
                         ) : (
@@ -57,11 +62,20 @@ export function StepList({
                       {/* Title */}
                       <span className="flex-1 truncate">{step.title}</span>
                       
-                      {/* Blocking badge */}
-                      {step.blocking && !isCompleted && !isSelected && (
-                        <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">
-                          Required
-                        </span>
+                      {/* Badges */}
+                      {!isSelected && !isCompleted && (
+                        <>
+                          {hasFindings && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded font-medium">
+                              From Scan
+                            </span>
+                          )}
+                          {step.blocking && !hasFindings && (
+                            <span className="text-xs px-1.5 py-0.5 bg-red-100 text-red-600 rounded">
+                              Required
+                            </span>
+                          )}
+                        </>
                       )}
                     </button>
                   </li>

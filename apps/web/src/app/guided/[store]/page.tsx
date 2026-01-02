@@ -8,11 +8,18 @@ import { StepList } from "@/components/guided/StepList";
 import { StepDetail } from "@/components/guided/StepDetail";
 import { ProgressBar } from "@/components/guided/ProgressBar";
 import { useToast } from "@/components/Toast";
-import type { StoreTarget } from "@storepreflight/guided";
-import type { RuleEvaluationResult } from "@/lib/browser-scanner/types";
+import type { StoreTarget, DeepLinkInfo } from "@storepreflight/guided";
+import { getDeepLinkForFinding } from "@storepreflight/guided";
+import type { RuleEvaluationResult, GateFinding } from "@/lib/browser-scanner/types";
 
 interface PageProps {
   params: Promise<{ store: string }>;
+}
+
+/** Finding with its resolved deep link */
+interface FindingWithLink {
+  finding: GateFinding;
+  deepLink: DeepLinkInfo | undefined;
 }
 
 export default function GuidedWizardPage({ params }: PageProps) {
@@ -24,6 +31,8 @@ export default function GuidedWizardPage({ params }: PageProps) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [autoStartStatus, setAutoStartStatus] = useState<"pending" | "started" | "done">("pending");
   const [deepLinkHandled, setDeepLinkHandled] = useState(false);
+  const [showFindingsPanel, setShowFindingsPanel] = useState(true);
+  const [scanFindings, setScanFindings] = useState<FindingWithLink[]>([]);
   const autoStartRef = useRef(false);
   const { addToast } = useToast();
   
@@ -75,6 +84,37 @@ export default function GuidedWizardPage({ params }: PageProps) {
       setAutoStartStatus("done");
     }
   }, [validStore, session, isLoading, startSession]);
+
+  // Load findings from scan result and create deep links
+  useEffect(() => {
+    if (!validStore) return;
+    
+    try {
+      const storedScan = localStorage.getItem("storepreflight_scan_result");
+      if (storedScan) {
+        const { result: evaluation } = JSON.parse(storedScan) as {
+          result: RuleEvaluationResult;
+        };
+        
+        // Filter findings for this store and map with deep links
+        const storeFindings = evaluation.findings
+          .filter((f) => f.platform === validStore || f.platform === "both")
+          .map((finding) => ({
+            finding,
+            deepLink: getDeepLinkForFinding(finding.id, validStore as StoreTarget),
+          }))
+          // Sort by risk level (high first)
+          .sort((a, b) => {
+            const riskOrder = { high: 0, medium: 1, low: 2 };
+            return riskOrder[a.finding.risk] - riskOrder[b.finding.risk];
+          });
+        
+        setScanFindings(storeFindings);
+      }
+    } catch (err) {
+      console.error("Failed to load findings:", err);
+    }
+  }, [validStore]);
 
   // Derive completed step IDs as a Set for StepList
   const completedStepIds = useMemo(() => {
@@ -444,14 +484,111 @@ export default function GuidedWizardPage({ params }: PageProps) {
 
       {/* Main content */}
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar - Step list */}
-        <aside className="w-72 flex-shrink-0 hidden md:block">
-          <StepList
-            steps={flow.steps}
-            selectedStepId={selectedStepId}
-            completedStepIds={completedStepIds}
-            onSelectStep={setSelectedStepId}
-          />
+        {/* Sidebar - Findings Panel + Step list */}
+        <aside className="w-72 flex-shrink-0 hidden md:flex md:flex-col border-r border-gray-200 bg-gray-50">
+          {/* Findings Quick Access Panel */}
+          {scanFindings.length > 0 && (
+            <div className="flex-shrink-0 border-b border-gray-200">
+              <button
+                onClick={() => setShowFindingsPanel(!showFindingsPanel)}
+                className="w-full px-4 py-3 flex items-center justify-between bg-amber-50 hover:bg-amber-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-600">⚠️</span>
+                  <span className="font-medium text-amber-800 text-sm">
+                    Your Findings ({scanFindings.length})
+                  </span>
+                </div>
+                <svg
+                  className={`w-4 h-4 text-amber-600 transition-transform ${showFindingsPanel ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {showFindingsPanel && (
+                <div className="p-3 space-y-2 max-h-64 overflow-y-auto bg-white">
+                  {scanFindings.map(({ finding, deepLink }) => (
+                    <div
+                      key={finding.id}
+                      className={`p-2 rounded-lg border text-xs ${
+                        finding.risk === "high"
+                          ? "border-red-200 bg-red-50"
+                          : finding.risk === "medium"
+                          ? "border-amber-200 bg-amber-50"
+                          : "border-gray-200 bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate">
+                            {finding.id.replace(/^(APPLE_|GOOGLE_)/, "")}
+                          </div>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${
+                              finding.risk === "high"
+                                ? "bg-red-200 text-red-800"
+                                : finding.risk === "medium"
+                                ? "bg-amber-200 text-amber-800"
+                                : "bg-gray-200 text-gray-700"
+                            }`}>
+                              {finding.risk.toUpperCase()}
+                            </span>
+                            {finding.isBlocking && (
+                              <span className="text-red-600 text-[10px]">Blocking</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {deepLink && (
+                          <button
+                            onClick={() => {
+                              // Find and navigate to the step
+                              const targetStep = flow?.steps.find((s) => s.id === deepLink.stepId);
+                              if (targetStep) {
+                                setSelectedStepId(targetStep.id);
+                                addToast({
+                                  type: "info",
+                                  title: "Jumped to Step",
+                                  message: deepLink.stepTitle,
+                                  duration: 2000,
+                                });
+                              }
+                            }}
+                            className="flex-shrink-0 p-1.5 bg-brand/10 hover:bg-brand/20 text-brand rounded transition-colors"
+                            title={`Go to: ${deepLink.stepTitle}`}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      
+                      {deepLink && (
+                        <div className="mt-1 text-[10px] text-gray-500 truncate">
+                          → {deepLink.stepTitle}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Step List */}
+          <div className="flex-1 overflow-hidden">
+            <StepList
+              steps={flow.steps}
+              selectedStepId={selectedStepId}
+              completedStepIds={completedStepIds}
+              onSelectStep={setSelectedStepId}
+            />
+          </div>
         </aside>
 
         {/* Mobile step selector */}
