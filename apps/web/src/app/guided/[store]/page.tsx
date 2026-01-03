@@ -631,32 +631,34 @@ export default function GuidedWizardPage({ params }: PageProps) {
                     <button
                       key={finding.id}
                       onClick={() => {
+                        // If console is configured, open the direct link first (always)
+                        if (findingConsoleLink) {
+                          window.open(findingConsoleLink.url, "_blank", "noopener,noreferrer");
+                          addToast({
+                            type: "success",
+                            title: "Opening App Store Connect",
+                            message: findingConsoleLink.section,
+                            duration: 3000,
+                          });
+                        }
+                        
+                        // Also navigate to the step in our wizard if it exists
                         if (deepLink) {
                           const targetStep = flow?.steps.find((s) => s.id === deepLink.stepId);
                           if (targetStep) {
                             setSelectedStepId(targetStep.id);
-                            
-                            // If console is configured, open the direct link
-                            if (findingConsoleLink) {
-                              window.open(findingConsoleLink.url, "_blank", "noopener,noreferrer");
-                              addToast({
-                                type: "success",
-                                title: "Opening App Store Connect",
-                                message: findingConsoleLink.section,
-                                duration: 3000,
-                              });
-                            } else {
-                              addToast({
-                                type: "info",
-                                title: "Jumped to Step",
-                                message: deepLink.stepTitle,
-                                duration: 2000,
-                              });
-                            }
+                          } else if (!findingConsoleLink) {
+                            // Only show toast if we didn't open console
+                            addToast({
+                              type: "warning",
+                              title: "Step Not in Current Flow",
+                              message: `${deepLink.stepTitle} is not required for your current submission intent`,
+                              duration: 3000,
+                            });
                           }
                         }
                       }}
-                      disabled={!deepLink}
+                      disabled={!deepLink && !findingConsoleLink}
                       className={`w-full p-2.5 rounded-lg border text-xs text-left transition-all ${
                         finding.risk === "high"
                           ? "border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300"

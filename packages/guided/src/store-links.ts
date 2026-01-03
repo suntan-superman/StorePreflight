@@ -38,80 +38,110 @@ export interface StoreConsoleLink {
 
 /**
  * App Store Connect section paths (appended to base app URL)
- * Base: https://appstoreconnect.apple.com/apps/{APP_ID}/appstore
+ * Base: https://appstoreconnect.apple.com/apps/{APP_ID}
  * 
- * These paths are based on App Store Connect's URL structure as of 2024.
- * Apple may change these, but the core structure has been stable.
+ * These paths are based on App Store Connect's URL structure as of 2024-2026.
+ * Verified against actual App Store Connect URLs.
  */
 const APPLE_CONSOLE_PATHS: Record<string, { path: string; section: string }> = {
-  // App Information
+  // App Information - General tab
   ASC_APP_INFORMATION: {
-    path: "/ios/appinfo",
-    section: "App Information",
+    path: "/distribution/generalAppInfo",
+    section: "General → App Information",
   },
   
-  // App Privacy
+  // App Privacy - Privacy section under Distribution
   ASC_PRIVACY_POLICY: {
-    path: "/ios/appinfo",
-    section: "App Information → Privacy Policy",
+    path: "/distribution/privacy",
+    section: "Distribution → Privacy",
   },
   ASC_DATA_COLLECTION: {
-    path: "/appstore/appprivacy",
-    section: "App Privacy",
+    path: "/distribution/privacy",
+    section: "Distribution → Privacy",
   },
   ASC_DATA_USAGE: {
-    path: "/appstore/appprivacy",
-    section: "App Privacy",
+    path: "/distribution/privacy",
+    section: "Distribution → Privacy",
   },
   ASC_DATA_TRACKING: {
-    path: "/appstore/appprivacy",
-    section: "App Privacy",
+    path: "/distribution/privacy",
+    section: "Distribution → Privacy",
   },
   
   // Pricing & Availability
   ASC_PRICING: {
     path: "/distribution/pricing",
-    section: "Pricing and Availability",
+    section: "Distribution → Pricing and Availability",
   },
   ASC_AVAILABILITY: {
     path: "/distribution/pricing",
-    section: "Pricing and Availability",
+    section: "Distribution → Pricing and Availability",
   },
   
-  // App Review - these are in the version submission flow
+  // App Review - in the iOS version submission flow
   ASC_SIGN_IN: {
-    path: "/appstore/reviewsubmission",
-    section: "App Review → Sign-In Information",
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → App Review Information",
   },
   ASC_REVIEW_NOTES: {
-    path: "/appstore/reviewsubmission",
-    section: "App Review → Notes",
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → App Review Information",
   },
   ASC_CONTACT_INFO: {
-    path: "/appstore/reviewsubmission",
-    section: "App Review → Contact Information",
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → App Review Information",
   },
+  
+  // Export Compliance
   ASC_EXPORT_COMPLIANCE: {
-    path: "/distribution/exportcompliance",
-    section: "Export Compliance",
+    path: "/distribution/encryption",
+    section: "Distribution → Encryption",
   },
+  
+  // Content Rights
   ASC_CONTENT_RIGHTS: {
-    path: "/appstore/reviewsubmission",
-    section: "App Review → Content Rights",
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → Content Rights",
   },
+  
+  // Age Rating
   ASC_AGE_RATING: {
-    path: "/appstore/agerating",
-    section: "Age Rating",
+    path: "/distribution/ageRatings",
+    section: "Distribution → Age Ratings",
   },
   
   // Version Release
+  ASC_RELEASE: {
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → Version Release",
+  },
   ASC_PHASED_RELEASE: {
-    path: "/distribution/phasedrelease",
-    section: "Phased Release",
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → Phased Release",
   },
   ASC_VERSION_RELEASE: {
-    path: "/distribution/phasedrelease",
-    section: "Version Release",
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → Version Release",
+  },
+  
+  // Store Listing - Screenshots & Media
+  ASC_SCREENSHOTS: {
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → Screenshots",
+  },
+  ASC_APP_PREVIEW: {
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → App Previews",
+  },
+  ASC_WHATS_NEW: {
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → What's New",
+  },
+  
+  // Submit
+  ASC_SUBMIT: {
+    path: "/distribution/ios/version/inflight",
+    section: "iOS App → Submit for Review",
   },
 };
 
