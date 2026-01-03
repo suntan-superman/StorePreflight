@@ -27,6 +27,8 @@ StorePreflight is a local-first scanner that analyzes your mobile app codebase a
 - 📝 **Copy-Paste Answers** - Pre-written justifications ready for submission
 - 📸 **Asset Processing** - Normalize screenshots to store requirements
 - 📦 **Submission Pack** - Export everything you need in a ZIP
+- 🔗 **Direct Console Links** - One-click navigation to exact App Store Connect / Play Console pages
+- 🧭 **Guided Submission** - Step-by-step walkthrough with scan-aware recommendations
 
 ## Supported Frameworks
 
@@ -156,6 +158,8 @@ result.findings.forEach(finding => {
 - [x] Screenshot normalization
 - [x] HTML report generation
 - [x] Submission Pack ZIP export
+- [x] Guided submission wizard
+- [x] Direct App Store Connect / Play Console links
 - [ ] Flutter scanner
 - [ ] CLI tool
 - [ ] CI/CD integration

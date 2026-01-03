@@ -7,9 +7,58 @@ Display status, blockers, warnings
 
 Support auto-fix / manual / docs
 
+**Direct Console Links** — One-click navigation to exact App Store Connect / Play Console pages
+
 Be engine-driven, not hardcoded
 
 Work in desktop (Electron/Tauri) and web
+
+---
+
+## 🔗 Direct Console Links Feature
+
+StorePreflight now supports **direct deep linking** to App Store Connect and Google Play Console. Users can configure their app's console URL once, and every guided step will provide a direct link to the relevant page.
+
+### How It Works
+
+1. **Configure Once**: User pastes any URL from their app in App Store Connect (e.g., `https://appstoreconnect.apple.com/apps/1234567890/appstore/ios/submission`)
+2. **App ID Extraction**: StorePreflight extracts the App ID automatically
+3. **Direct Navigation**: Each step shows an "Open in App Store Connect" button that links directly to:
+   - Sign-In Information → App Review submission page
+   - Export Compliance → Export compliance page  
+   - Privacy Practices → App privacy page
+   - Age Rating → Age rating questionnaire
+   - And more...
+
+### Privacy & Trust
+
+- **No actions taken**: StorePreflight will never take any actions on the user's behalf
+- **Local storage only**: App ID is stored in browser localStorage
+- **Guidance only**: Links simply navigate users to the correct page
+
+### Supported Pages (Apple)
+
+| Step | Console Path |
+|------|--------------|
+| Sign-In Information | `/appstore/reviewsubmission` |
+| Export Compliance | `/distribution/exportcompliance` |
+| App Privacy | `/appstore/appprivacy` |
+| Content Rights | `/distribution/contentrights` |
+| Age Rating | `/appstore/ageratingdeclaration` |
+| App Information | `/appstore/info` |
+| Pricing | `/distribution/pricing` |
+
+### Supported Pages (Google Play)
+
+| Step | Console Path |
+|------|--------------|
+| Data Safety | `/app-content/data-safety` |
+| Content Rating | `/content-rating` |
+| Target Audience | `/target-audience` |
+| Store Listing | `/store-listing/main-store-listing` |
+| Pricing | `/pricing` |
+
+---
 
 1️⃣ Wizard Data Contract (UI-Facing)
 

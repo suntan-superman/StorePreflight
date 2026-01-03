@@ -38,6 +38,18 @@ export {
   hasGuidedStep,
 } from "./step-mapping";
 
+// Store Console Links (direct links to App Store Connect / Play Console)
+export type { StoreConsoleConfig, StoreConsoleLink } from "./store-links";
+export {
+  parseAppleAppUrl,
+  parseGooglePlayUrl,
+  parseStoreUrl,
+  getAppleConsoleLink,
+  getGoogleConsoleLink,
+  getConsoleLink,
+  CONSOLE_CONFIG_KEYS,
+} from "./store-links";
+
 // Catalogs
 export { googleGuidedCatalog, GOOGLE_SECTION_ORDER } from "./catalogs/google";
 export { appleGuidedCatalog, APPLE_SECTION_ORDER } from "./catalogs/apple";

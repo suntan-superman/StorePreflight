@@ -8,8 +8,13 @@ import { StepList } from "@/components/guided/StepList";
 import { StepDetail } from "@/components/guided/StepDetail";
 import { ProgressBar } from "@/components/guided/ProgressBar";
 import { useToast } from "@/components/Toast";
-import type { StoreTarget, DeepLinkInfo } from "@storepreflight/guided";
-import { getDeepLinkForFinding } from "@storepreflight/guided";
+import type { StoreTarget, DeepLinkInfo, StoreConsoleLink } from "@storepreflight/guided";
+import { 
+  getDeepLinkForFinding, 
+  getConsoleLink, 
+  parseStoreUrl,
+  CONSOLE_CONFIG_KEYS 
+} from "@storepreflight/guided";
 import type { RuleEvaluationResult, GateFinding } from "@/lib/browser-scanner/types";
 
 interface PageProps {
@@ -20,6 +25,13 @@ interface PageProps {
 interface FindingWithLink {
   finding: GateFinding;
   deepLink: DeepLinkInfo | undefined;
+}
+
+/** Stored console configuration */
+interface ConsoleConfig {
+  appId: string;
+  devId?: string;
+  appUrl: string;
 }
 
 export default function GuidedWizardPage({ params }: PageProps) {
@@ -33,6 +45,9 @@ export default function GuidedWizardPage({ params }: PageProps) {
   const [deepLinkHandled, setDeepLinkHandled] = useState(false);
   const [showFindingsPanel, setShowFindingsPanel] = useState(true);
   const [scanFindings, setScanFindings] = useState<FindingWithLink[]>([]);
+  const [showConsoleConfig, setShowConsoleConfig] = useState(false);
+  const [consoleConfig, setConsoleConfig] = useState<ConsoleConfig | null>(null);
+  const [consoleUrlInput, setConsoleUrlInput] = useState("");
   const autoStartRef = useRef(false);
   const { addToast } = useToast();
   
@@ -84,6 +99,24 @@ export default function GuidedWizardPage({ params }: PageProps) {
       setAutoStartStatus("done");
     }
   }, [validStore, session, isLoading, startSession]);
+
+  // Load console configuration from localStorage
+  useEffect(() => {
+    if (!validStore) return;
+    
+    const storageKey = validStore === "apple" 
+      ? CONSOLE_CONFIG_KEYS.APPLE 
+      : CONSOLE_CONFIG_KEYS.GOOGLE;
+    
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        setConsoleConfig(JSON.parse(stored));
+      }
+    } catch (err) {
+      console.error("Failed to load console config:", err);
+    }
+  }, [validStore]);
 
   // Load findings from scan result and create deep links
   useEffect(() => {
@@ -143,6 +176,50 @@ export default function GuidedWizardPage({ params }: PageProps) {
     if (genCopy.marketingUrl) copy.marketingUrl = genCopy.marketingUrl;
     return copy;
   }, [session]);
+
+  // Get console link for current step
+  const currentConsoleLink = useMemo<StoreConsoleLink | null>(() => {
+    if (!selectedStepId || !validStore || !consoleConfig) return null;
+    return getConsoleLink(selectedStepId, validStore as StoreTarget, consoleConfig) || null;
+  }, [selectedStepId, validStore, consoleConfig]);
+
+  // Save console configuration
+  const handleSaveConsoleConfig = useCallback(() => {
+    if (!validStore || !consoleUrlInput.trim()) return;
+    
+    const parsed = parseStoreUrl(consoleUrlInput.trim(), validStore as StoreTarget);
+    if (!parsed) {
+      addToast({
+        type: "error",
+        title: "Invalid URL",
+        message: validStore === "apple" 
+          ? "Please paste a valid App Store Connect URL (e.g., https://appstoreconnect.apple.com/apps/1234567890/...)"
+          : "Please paste a valid Google Play Console URL",
+      });
+      return;
+    }
+    
+    const config: ConsoleConfig = {
+      appId: parsed.appId,
+      devId: parsed.devId,
+      appUrl: consoleUrlInput.trim(),
+    };
+    
+    const storageKey = validStore === "apple" 
+      ? CONSOLE_CONFIG_KEYS.APPLE 
+      : CONSOLE_CONFIG_KEYS.GOOGLE;
+    
+    localStorage.setItem(storageKey, JSON.stringify(config));
+    setConsoleConfig(config);
+    setShowConsoleConfig(false);
+    setConsoleUrlInput("");
+    
+    addToast({
+      type: "success",
+      title: "Configuration Saved",
+      message: `${validStore === "apple" ? "App Store Connect" : "Play Console"} links are now active!`,
+    });
+  }, [validStore, consoleUrlInput, addToast]);
 
   // Handle deep-link from query parameter (e.g., ?step=ASC_EXPORT_COMPLIANCE)
   useEffect(() => {
@@ -511,24 +588,42 @@ export default function GuidedWizardPage({ params }: PageProps) {
               
               {showFindingsPanel && (
                 <div className="p-3 space-y-2 max-h-64 overflow-y-auto bg-white">
+                  <p className="text-[10px] text-gray-500 mb-2">
+                    Click a finding to jump to its step →
+                  </p>
                   {scanFindings.map(({ finding, deepLink }) => (
-                    <div
+                    <button
                       key={finding.id}
-                      className={`p-2 rounded-lg border text-xs ${
+                      onClick={() => {
+                        if (deepLink) {
+                          const targetStep = flow?.steps.find((s) => s.id === deepLink.stepId);
+                          if (targetStep) {
+                            setSelectedStepId(targetStep.id);
+                            addToast({
+                              type: "info",
+                              title: "Jumped to Step",
+                              message: deepLink.stepTitle,
+                              duration: 2000,
+                            });
+                          }
+                        }
+                      }}
+                      disabled={!deepLink}
+                      className={`w-full p-2.5 rounded-lg border text-xs text-left transition-all ${
                         finding.risk === "high"
-                          ? "border-red-200 bg-red-50"
+                          ? "border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300"
                           : finding.risk === "medium"
-                          ? "border-amber-200 bg-amber-50"
-                          : "border-gray-200 bg-gray-50"
-                      }`}
+                          ? "border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300"
+                          : "border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300"
+                      } ${deepLink ? "cursor-pointer" : "cursor-default opacity-60"}`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 truncate">
-                            {finding.id.replace(/^(APPLE_|GOOGLE_)/, "")}
+                            {finding.id.replace(/^(APPLE_|GOOGLE_)/, "").replace(/_/g, " ")}
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                               finding.risk === "high"
                                 ? "bg-red-200 text-red-800"
                                 : finding.risk === "medium"
@@ -538,42 +633,28 @@ export default function GuidedWizardPage({ params }: PageProps) {
                               {finding.risk.toUpperCase()}
                             </span>
                             {finding.isBlocking && (
-                              <span className="text-red-600 text-[10px]">Blocking</span>
+                              <span className="text-red-600 text-[10px] font-medium">• Blocking</span>
                             )}
                           </div>
                         </div>
                         
                         {deepLink && (
-                          <button
-                            onClick={() => {
-                              // Find and navigate to the step
-                              const targetStep = flow?.steps.find((s) => s.id === deepLink.stepId);
-                              if (targetStep) {
-                                setSelectedStepId(targetStep.id);
-                                addToast({
-                                  type: "info",
-                                  title: "Jumped to Step",
-                                  message: deepLink.stepTitle,
-                                  duration: 2000,
-                                });
-                              }
-                            }}
-                            className="flex-shrink-0 p-1.5 bg-brand/10 hover:bg-brand/20 text-brand rounded transition-colors"
-                            title={`Go to: ${deepLink.stepTitle}`}
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex-shrink-0 flex items-center gap-1 text-brand">
+                            <span className="text-[10px] font-medium hidden sm:inline">Go</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>
-                          </button>
+                          </div>
                         )}
                       </div>
                       
                       {deepLink && (
-                        <div className="mt-1 text-[10px] text-gray-500 truncate">
-                          → {deepLink.stepTitle}
+                        <div className="mt-1.5 text-[10px] text-gray-500 flex items-center gap-1">
+                          <span>→</span>
+                          <span className="font-medium text-gray-700">{deepLink.stepTitle}</span>
                         </div>
                       )}
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -639,6 +720,8 @@ export default function GuidedWizardPage({ params }: PageProps) {
               isCompleted={isStepComplete(selectedStep.id)}
               onToggleComplete={handleToggleComplete}
               generatedCopy={generatedCopy}
+              consoleLink={currentConsoleLink}
+              onConfigureConsole={() => setShowConsoleConfig(true)}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
@@ -680,6 +763,92 @@ export default function GuidedWizardPage({ params }: PageProps) {
                 className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
               >
                 Reset Progress
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Console Configuration Modal */}
+      {showConsoleConfig && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                {validStore === "apple" ? (
+                  <span className="text-xl">🍎</span>
+                ) : (
+                  <span className="text-xl">▶️</span>
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Configure {validStore === "apple" ? "App Store Connect" : "Play Console"} Link
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Paste your app&apos;s console URL to enable direct links
+                </p>
+              </div>
+            </div>
+            
+            {/* Privacy & Trust Notice */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex gap-2">
+                <span className="text-blue-600 flex-shrink-0">🔒</span>
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Why we need this</p>
+                  <p className="text-blue-700">
+                    We use your app URL solely to generate direct links to the relevant pages in {validStore === "apple" ? "App Store Connect" : "Google Play Console"}. 
+                    <strong className="font-semibold"> StorePreflight will never take any actions on your behalf</strong> — this is purely for guidance to help you navigate to the right place.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {validStore === "apple" ? "App Store Connect" : "Google Play Console"} App URL
+              </label>
+              <input
+                type="url"
+                value={consoleUrlInput}
+                onChange={(e) => setConsoleUrlInput(e.target.value)}
+                placeholder={validStore === "apple" 
+                  ? "https://appstoreconnect.apple.com/apps/1234567890/..." 
+                  : "https://play.google.com/console/u/0/developers/.../app/..."}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                {validStore === "apple" 
+                  ? "Go to App Store Connect, open your app, and copy the URL from your browser's address bar."
+                  : "Go to Google Play Console, open your app, and copy the URL from your browser's address bar."}
+              </p>
+            </div>
+
+            {consoleConfig && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  ✓ Currently configured: App ID <code className="font-mono bg-green-100 px-1 rounded">{consoleConfig.appId}</code>
+                </p>
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowConsoleConfig(false);
+                  setConsoleUrlInput("");
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveConsoleConfig}
+                disabled={!consoleUrlInput.trim()}
+                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Configuration
               </button>
             </div>
           </div>

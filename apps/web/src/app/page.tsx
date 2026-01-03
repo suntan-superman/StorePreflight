@@ -98,6 +98,16 @@ export default function HomePage() {
               title="Export Submission Pack"
               description="Download a ZIP with everything you need: reports, screenshots, checklists."
             />
+            <FeatureCard
+              icon="🔗"
+              title="Direct Console Links"
+              description="Jump straight to the exact page in App Store Connect or Play Console. No searching required."
+            />
+            <FeatureCard
+              icon="🧭"
+              title="Guided Submission"
+              description="Step-by-step walkthrough that adapts to your scan results. Complete your submission with confidence."
+            />
           </div>
         </div>
       </section>

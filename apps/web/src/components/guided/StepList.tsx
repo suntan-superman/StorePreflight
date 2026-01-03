@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { GuidedStep } from "@storepreflight/guided";
 
 interface StepListProps {
@@ -17,6 +18,19 @@ export function StepList({
 }: StepListProps) {
   // Group steps by section
   const sections = groupStepsBySection(steps);
+  
+  // Ref for selected step to auto-scroll
+  const selectedRef = useRef<HTMLLIElement>(null);
+  
+  // Auto-scroll to selected step when it changes
+  useEffect(() => {
+    if (selectedRef.current) {
+      selectedRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [selectedStepId]);
 
   return (
     <nav className="h-full overflow-y-auto bg-gray-50">
@@ -33,12 +47,15 @@ export function StepList({
                 const hasFindings = step.triggeredByRuleIds.length > 0;
 
                 return (
-                  <li key={step.id}>
+                  <li 
+                    key={step.id}
+                    ref={isSelected ? selectedRef : null}
+                  >
                     <button
                       onClick={() => onSelectStep(step.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-2 ${
                         isSelected
-                          ? "bg-brand text-white"
+                          ? "bg-brand text-white ring-2 ring-brand ring-offset-2"
                           : isCompleted
                           ? "bg-green-50 text-green-800 hover:bg-green-100"
                           : hasFindings && !isCompleted

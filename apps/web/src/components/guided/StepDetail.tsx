@@ -1,6 +1,7 @@
 "use client";
 
-import type { GuidedStep } from "@storepreflight/guided";
+import { useEffect, useRef } from "react";
+import type { GuidedStep, StoreConsoleLink } from "@storepreflight/guided";
 import { CopyButton } from "./CopyButton";
 
 interface StepDetailProps {
@@ -8,6 +9,10 @@ interface StepDetailProps {
   isCompleted: boolean;
   onToggleComplete: () => void;
   generatedCopy?: Record<string, string>;
+  /** Direct link to App Store Connect / Play Console for this step */
+  consoleLink?: StoreConsoleLink | null;
+  /** Callback when user wants to configure console URL */
+  onConfigureConsole?: () => void;
 }
 
 export function StepDetail({
@@ -15,13 +20,75 @@ export function StepDetail({
   isCompleted,
   onToggleComplete,
   generatedCopy = {},
+  consoleLink,
+  onConfigureConsole,
 }: StepDetailProps) {
   // Check for missing placeholders
   const hasMissingKeys = step.missingKeys && step.missingKeys.length > 0;
+  
+  // Ref for scrolling to top when step changes
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [step.id]);
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div ref={containerRef} className="h-full overflow-y-auto">
+      <div className="max-w-3xl mx-auto p-6 space-y-6 animate-fadeIn">
+        {/* Direct Link to Store Console */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                {step.store === "apple" ? (
+                  <span className="text-xl">🍎</span>
+                ) : (
+                  <span className="text-xl">▶️</span>
+                )}
+              </div>
+              <div>
+                <h4 className="font-medium text-blue-900">
+                  {consoleLink ? consoleLink.section : `Open in ${step.store === "apple" ? "App Store Connect" : "Play Console"}`}
+                </h4>
+                <p className="text-sm text-blue-700">
+                  {consoleLink 
+                    ? "Click to open this section directly" 
+                    : "Configure your app URL to get direct links"}
+                </p>
+              </div>
+            </div>
+            
+            {consoleLink ? (
+              <a
+                href={consoleLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                {consoleLink.label}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            ) : (
+              <button
+                onClick={onConfigureConsole}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                Configure
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Missing data warning */}
         {hasMissingKeys && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
