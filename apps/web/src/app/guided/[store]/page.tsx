@@ -563,6 +563,29 @@ export default function GuidedWizardPage({ params }: PageProps) {
       <div className="flex flex-1 min-h-0">
         {/* Sidebar - Findings Panel + Step list */}
         <aside className="w-72 flex-shrink-0 hidden md:flex md:flex-col border-r border-gray-200 bg-gray-50">
+          {/* Configure Console URL Prompt - show if findings exist but console not configured */}
+          {scanFindings.length > 0 && !consoleConfig && (
+            <div className="flex-shrink-0 border-b border-gray-200 p-3 bg-blue-50">
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 text-lg">🔗</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-900 font-medium">
+                    Want direct links to App Store Connect?
+                  </p>
+                  <p className="text-[10px] text-blue-700 mt-0.5">
+                    Configure your app URL to open findings directly in the console.
+                  </p>
+                  <button
+                    onClick={() => setShowConsoleConfig(true)}
+                    className="mt-2 text-[10px] font-medium text-blue-700 hover:text-blue-900 underline"
+                  >
+                    Configure App URL →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Findings Quick Access Panel */}
           {scanFindings.length > 0 && (
             <div className="flex-shrink-0 border-b border-gray-200">
@@ -575,6 +598,11 @@ export default function GuidedWizardPage({ params }: PageProps) {
                   <span className="font-medium text-amber-800 text-sm">
                     Your Findings ({scanFindings.length})
                   </span>
+                  {consoleConfig && (
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                      🔗 Linked
+                    </span>
+                  )}
                 </div>
                 <svg
                   className={`w-4 h-4 text-amber-600 transition-transform ${showFindingsPanel ? "rotate-180" : ""}`}
@@ -589,9 +617,17 @@ export default function GuidedWizardPage({ params }: PageProps) {
               {showFindingsPanel && (
                 <div className="p-3 space-y-2 max-h-64 overflow-y-auto bg-white">
                   <p className="text-[10px] text-gray-500 mb-2">
-                    Click a finding to jump to its step →
+                    {consoleConfig 
+                      ? "Click a finding to open App Store Connect →"
+                      : "Click a finding to jump to its step →"}
                   </p>
-                  {scanFindings.map(({ finding, deepLink }) => (
+                  {scanFindings.map(({ finding, deepLink }) => {
+                    // Get direct console link for this finding's step
+                    const findingConsoleLink = deepLink && consoleConfig
+                      ? getConsoleLink(deepLink.stepId, validStore as StoreTarget, consoleConfig)
+                      : null;
+                    
+                    return (
                     <button
                       key={finding.id}
                       onClick={() => {
@@ -599,12 +635,24 @@ export default function GuidedWizardPage({ params }: PageProps) {
                           const targetStep = flow?.steps.find((s) => s.id === deepLink.stepId);
                           if (targetStep) {
                             setSelectedStepId(targetStep.id);
-                            addToast({
-                              type: "info",
-                              title: "Jumped to Step",
-                              message: deepLink.stepTitle,
-                              duration: 2000,
-                            });
+                            
+                            // If console is configured, open the direct link
+                            if (findingConsoleLink) {
+                              window.open(findingConsoleLink.url, "_blank", "noopener,noreferrer");
+                              addToast({
+                                type: "success",
+                                title: "Opening App Store Connect",
+                                message: findingConsoleLink.section,
+                                duration: 3000,
+                              });
+                            } else {
+                              addToast({
+                                type: "info",
+                                title: "Jumped to Step",
+                                message: deepLink.stepTitle,
+                                duration: 2000,
+                              });
+                            }
                           }
                         }
                       }}
@@ -639,11 +687,22 @@ export default function GuidedWizardPage({ params }: PageProps) {
                         </div>
                         
                         {deepLink && (
-                          <div className="flex-shrink-0 flex items-center gap-1 text-brand">
-                            <span className="text-[10px] font-medium hidden sm:inline">Go</span>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                            </svg>
+                          <div className="flex-shrink-0 flex items-center gap-1">
+                            {findingConsoleLink ? (
+                              <span className="text-blue-600 text-[10px] font-medium flex items-center gap-1">
+                                Open
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </span>
+                            ) : (
+                              <span className="text-brand text-[10px] font-medium flex items-center gap-1">
+                                <span className="hidden sm:inline">Go</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -651,11 +710,14 @@ export default function GuidedWizardPage({ params }: PageProps) {
                       {deepLink && (
                         <div className="mt-1.5 text-[10px] text-gray-500 flex items-center gap-1">
                           <span>→</span>
-                          <span className="font-medium text-gray-700">{deepLink.stepTitle}</span>
+                          <span className="font-medium text-gray-700">
+                            {findingConsoleLink ? findingConsoleLink.section : deepLink.stepTitle}
+                          </span>
                         </div>
                       )}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
