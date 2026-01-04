@@ -56,24 +56,26 @@ export function StepDetail({
                 </h4>
                 <p className="text-sm text-blue-700">
                   {consoleLink 
-                    ? "Click to open this section directly" 
+                    ? "Click to open this section (reuses same tab)" 
                     : "Configure your app URL to get direct links"}
                 </p>
               </div>
             </div>
             
             {consoleLink ? (
-              <a
-                href={consoleLink.url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => {
+                  // Reuse the same window for all ASC links
+                  const w = window.open(consoleLink.url, "storepreflight_asc_window", "noopener");
+                  if (w) w.focus();
+                }}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
               >
                 {consoleLink.label}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-              </a>
+              </button>
             ) : (
               <button
                 onClick={onConfigureConsole}

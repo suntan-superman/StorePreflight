@@ -34,6 +34,9 @@ interface ConsoleConfig {
   appUrl: string;
 }
 
+// Window name for reusing the same App Store Connect tab
+const ASC_WINDOW_NAME = "storepreflight_asc_window";
+
 export default function GuidedWizardPage({ params }: PageProps) {
   const { store } = use(params);
   const searchParams = useSearchParams();
@@ -49,6 +52,7 @@ export default function GuidedWizardPage({ params }: PageProps) {
   const [consoleConfig, setConsoleConfig] = useState<ConsoleConfig | null>(null);
   const [consoleUrlInput, setConsoleUrlInput] = useState("");
   const autoStartRef = useRef(false);
+  const ascWindowRef = useRef<Window | null>(null);
   const { addToast } = useToast();
   
   // Validate store parameter
@@ -220,6 +224,25 @@ export default function GuidedWizardPage({ params }: PageProps) {
       message: `${validStore === "apple" ? "App Store Connect" : "Play Console"} links are now active!`,
     });
   }, [validStore, consoleUrlInput, addToast]);
+
+  // Helper function to open ASC in the same window (reuse tab)
+  const openInAppStoreConnect = useCallback((url: string, sectionName: string) => {
+    // Try to reuse the existing window
+    if (ascWindowRef.current && !ascWindowRef.current.closed) {
+      ascWindowRef.current.location.href = url;
+      ascWindowRef.current.focus();
+    } else {
+      // Open new window with a name so we can reuse it
+      ascWindowRef.current = window.open(url, ASC_WINDOW_NAME, "noopener");
+    }
+    
+    addToast({
+      type: "success",
+      title: "Opening App Store Connect",
+      message: sectionName,
+      duration: 2000,
+    });
+  }, [addToast]);
 
   // Handle deep-link from query parameter (e.g., ?step=ASC_EXPORT_COMPLIANCE)
   useEffect(() => {
@@ -523,6 +546,17 @@ export default function GuidedWizardPage({ params }: PageProps) {
               </button>
             </div>
 
+            {/* Submission Preview Link */}
+            {validStore === "apple" && consoleConfig && (
+              <Link
+                href="/submission-preview"
+                className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-sm"
+              >
+                <span>📋</span>
+                Submission Preview
+              </Link>
+            )}
+
             {/* Progress summary */}
             <div className="hidden sm:block text-right text-sm">
               <div className="text-gray-900 font-medium">
@@ -618,7 +652,7 @@ export default function GuidedWizardPage({ params }: PageProps) {
                 <div className="p-3 space-y-2 max-h-64 overflow-y-auto bg-white">
                   <p className="text-[10px] text-gray-500 mb-2">
                     {consoleConfig 
-                      ? "Click a finding to open App Store Connect →"
+                      ? "Click a finding to open in App Store Connect (same tab) →"
                       : "Click a finding to jump to its step →"}
                   </p>
                   {scanFindings.map(({ finding, deepLink }) => {
@@ -631,15 +665,9 @@ export default function GuidedWizardPage({ params }: PageProps) {
                     <button
                       key={finding.id}
                       onClick={() => {
-                        // If console is configured, open the direct link first (always)
+                        // If console is configured, open the direct link (reuse same tab)
                         if (findingConsoleLink) {
-                          window.open(findingConsoleLink.url, "_blank", "noopener,noreferrer");
-                          addToast({
-                            type: "success",
-                            title: "Opening App Store Connect",
-                            message: findingConsoleLink.section,
-                            duration: 3000,
-                          });
+                          openInAppStoreConnect(findingConsoleLink.url, findingConsoleLink.section);
                         }
                         
                         // Also navigate to the step in our wizard if it exists
