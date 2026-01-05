@@ -1,18 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { GateFinding } from "@/lib/browser-scanner/types";
 import { Header } from "@/components/Header";
 
 // =============================================================================
 // TYPES
 // =============================================================================
-
-interface ScanResultData {
-  findings: GateFinding[];
-}
 
 interface ConsoleConfig {
   appId: string;
@@ -20,30 +14,42 @@ interface ConsoleConfig {
   appUrl: string;
 }
 
-interface FieldStatus {
-  status: "complete" | "from-scan" | "needs-input" | "optional";
-  value?: string;
-  placeholder?: string;
+interface ScanData {
+  appName?: string;
+  bundleId?: string;
+  version?: string;
+  sdkVersion?: string;
+  platforms?: string[];
+  capabilities?: string[];
+  permissions?: string[];
 }
 
-interface SectionField {
-  id: string;
-  label: string;
-  description?: string;
-  type: "text" | "textarea" | "url" | "select" | "file";
-  status: FieldStatus;
-  ascPath?: string; // Specific path in App Store Connect
-  copyable?: boolean;
-  required?: boolean;
-}
-
-interface FormSection {
-  id: string;
-  title: string;
-  icon: string;
-  ascPath: string; // Path in App Store Connect
+interface FormData {
+  // Localizable Information
+  promotionalText: string;
   description: string;
-  fields: SectionField[];
+  keywords: string;
+  whatsNew: string;
+  supportUrl: string;
+  marketingUrl: string;
+  
+  // General Information
+  version: string;
+  copyright: string;
+  
+  // App Review
+  signInRequired: "yes" | "no" | "";
+  demoUsername: string;
+  demoPassword: string;
+  contactFirstName: string;
+  contactLastName: string;
+  contactPhone: string;
+  contactEmail: string;
+  reviewNotes: string;
+  
+  // Version Release
+  releaseType: "manual" | "immediate" | "scheduled";
+  phasedRelease: boolean;
 }
 
 // =============================================================================
@@ -53,380 +59,132 @@ interface FormSection {
 const STORAGE_KEYS = {
   CONSOLE_CONFIG: "storepreflight_apple_console_config",
   SCAN_RESULT: "storepreflight_scan_result",
-  SESSION: "storepreflight_session",
-  PREVIEW_DATA: "storepreflight_preview_data",
+  FORM_DATA: "storepreflight_submission_form",
 };
 
 // =============================================================================
-// APP STORE CONNECT SECTION DEFINITIONS
+// SMART GENERATORS
 // =============================================================================
 
-function buildAppleFormSections(
-  appId: string,
-  scanResult: ScanResultData | null,
-  sessionData: Record<string, string>
-): FormSection[] {
-  const baseUrl = `https://appstoreconnect.apple.com/apps/${appId}`;
+function generateDescription(scanData: ScanData, userDescription: string): string {
+  if (userDescription) return userDescription;
   
-  // Helper to determine field status
-  const getFieldStatus = (
-    fieldId: string,
-    sessionKey?: string,
-    isFromScan?: boolean
-  ): FieldStatus => {
-    const value = sessionKey ? sessionData[sessionKey] : undefined;
-    if (value) {
-      return { status: isFromScan ? "from-scan" : "complete", value };
-    }
-    return { status: "needs-input" };
-  };
+  const features: string[] = [];
+  const appName = scanData.appName || "This app";
+  
+  if (scanData.capabilities?.includes("location_foreground") || scanData.capabilities?.includes("location_background")) {
+    features.push("location-based services");
+  }
+  if (scanData.capabilities?.includes("camera")) {
+    features.push("camera functionality");
+  }
+  if (scanData.capabilities?.includes("notifications")) {
+    features.push("push notifications");
+  }
+  if (scanData.capabilities?.includes("authentication")) {
+    features.push("secure user authentication");
+  }
+  if (scanData.capabilities?.includes("payments")) {
+    features.push("in-app purchases");
+  }
+  
+  if (features.length === 0) {
+    return `${appName} provides a seamless mobile experience designed to help you accomplish your goals efficiently.\n\nKey Features:\n• Intuitive, user-friendly interface\n• Fast and responsive performance\n• Regular updates and improvements\n\nDownload now and discover what ${appName} can do for you!`;
+  }
+  
+  return `${appName} is a powerful mobile application featuring ${features.join(", ")}.\n\nKey Features:\n${features.map(f => `• ${f.charAt(0).toUpperCase() + f.slice(1)}`).join("\n")}\n• Intuitive, user-friendly interface\n• Fast and responsive performance\n\nDownload now and experience the difference!`;
+}
 
-  return [
-    // =========================================================================
-    // App Information Section
-    // =========================================================================
-    {
-      id: "app-info",
-      title: "App Information",
-      icon: "📱",
-      ascPath: `${baseUrl}/distribution/generalAppInfo`,
-      description: "Basic app details displayed on the App Store",
-      fields: [
-        {
-          id: "app-name",
-          label: "App Name",
-          description: "The name of your app as it appears on the App Store (max 30 characters)",
-          type: "text",
-          status: getFieldStatus("app-name", "appName"),
-          required: true,
-          copyable: true,
-        },
-        {
-          id: "subtitle",
-          label: "Subtitle",
-          description: "A brief summary of your app (max 30 characters)",
-          type: "text",
-          status: { status: "optional", placeholder: "Optional - adds context under app name" },
-          copyable: true,
-        },
-        {
-          id: "primary-category",
-          label: "Primary Category",
-          type: "select",
-          status: { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "secondary-category",
-          label: "Secondary Category",
-          type: "select",
-          status: { status: "optional" },
-        },
-        {
-          id: "content-rights",
-          label: "Content Rights",
-          description: "Does your app contain, show, or access third-party content?",
-          type: "select",
-          status: { status: "needs-input" },
-          required: true,
-        },
-      ],
-    },
+function generateKeywords(scanData: ScanData): string {
+  const keywords: string[] = [];
+  
+  // Add app name words
+  if (scanData.appName) {
+    keywords.push(...scanData.appName.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+  }
+  
+  // Add capability-based keywords
+  if (scanData.capabilities?.includes("location_foreground") || scanData.capabilities?.includes("location_background")) {
+    keywords.push("location", "maps", "navigation", "gps");
+  }
+  if (scanData.capabilities?.includes("camera")) {
+    keywords.push("camera", "photo", "scan");
+  }
+  if (scanData.capabilities?.includes("notifications")) {
+    keywords.push("alerts", "reminders");
+  }
+  if (scanData.capabilities?.includes("authentication")) {
+    keywords.push("secure", "login", "account");
+  }
+  
+  // Add general keywords
+  keywords.push("mobile", "app");
+  
+  // Deduplicate and limit to 100 chars
+  const unique = [...new Set(keywords)];
+  let result = unique.join(",");
+  while (result.length > 100) {
+    unique.pop();
+    result = unique.join(",");
+  }
+  
+  return result;
+}
 
-    // =========================================================================
-    // Privacy Section
-    // =========================================================================
-    {
-      id: "privacy",
-      title: "Privacy",
-      icon: "🔒",
-      ascPath: `${baseUrl}/distribution/privacy`,
-      description: "Privacy policy and App Privacy labels",
-      fields: [
-        {
-          id: "privacy-policy-url",
-          label: "Privacy Policy URL",
-          description: "Link to your publicly accessible privacy policy",
-          type: "url",
-          status: getFieldStatus("privacy-policy-url", "privacyPolicyUrl", true),
-          required: true,
-          copyable: true,
-        },
-        {
-          id: "data-collection",
-          label: "Data Collection Practices",
-          description: "Declare what data your app collects and how it's used",
-          type: "text",
-          status: scanResult?.findings.some(f => 
-            f.id.includes("LOCATION") || f.id.includes("CAMERA") || f.id.includes("PHOTO")
-          ) ? { status: "from-scan", value: "Data types detected by scan - review required" } 
-            : { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "tracking",
-          label: "Tracking Declaration",
-          description: "Does your app track users across other companies' apps/websites?",
-          type: "select",
-          status: { status: "needs-input" },
-          required: true,
-        },
-      ],
-    },
+function generatePromotionalText(scanData: ScanData): string {
+  const appName = scanData.appName || "Our app";
+  return `${appName} - Your essential companion for getting things done. Download now!`;
+}
 
-    // =========================================================================
-    // Pricing & Availability
-    // =========================================================================
-    {
-      id: "pricing",
-      title: "Pricing & Availability",
-      icon: "💰",
-      ascPath: `${baseUrl}/distribution/pricing`,
-      description: "Set your app's price and availability",
-      fields: [
-        {
-          id: "price",
-          label: "Price",
-          description: "Base price for your app",
-          type: "select",
-          status: { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "availability",
-          label: "Availability",
-          description: "Countries and regions where your app is available",
-          type: "select",
-          status: { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "pre-order",
-          label: "Pre-Order",
-          description: "Make your app available for pre-order",
-          type: "select",
-          status: { status: "optional" },
-        },
-      ],
-    },
+function generateReviewerNotes(scanData: ScanData): string {
+  const notes: string[] = [];
+  
+  if (scanData.capabilities?.includes("location_background")) {
+    notes.push("• Background location is used only during active work sessions for [describe purpose]. Location tracking stops when the user ends their session.");
+  }
+  if (scanData.capabilities?.includes("location_foreground")) {
+    notes.push("• Location access is used to [describe purpose, e.g., show nearby locations, provide navigation].");
+  }
+  if (scanData.capabilities?.includes("camera")) {
+    notes.push("• Camera access is used to [describe purpose, e.g., scan documents, take photos for records].");
+  }
+  if (scanData.capabilities?.includes("notifications")) {
+    notes.push("• Push notifications are used to alert users about [describe what triggers notifications].");
+  }
+  if (scanData.capabilities?.includes("authentication")) {
+    notes.push("• Demo account credentials are provided above for testing all app features.");
+  }
+  
+  if (notes.length === 0) {
+    return "Thank you for reviewing our app. All features are accessible without special configuration. Please contact us if you have any questions during the review process.";
+  }
+  
+  return notes.join("\n\n") + "\n\nPlease contact us if you have any questions during the review process.";
+}
 
-    // =========================================================================
-    // iOS App Version
-    // =========================================================================
-    {
-      id: "version-info",
-      title: "iOS App - Version Information",
-      icon: "📋",
-      ascPath: `${baseUrl}/distribution/ios/version/inflight`,
-      description: "Screenshots, description, and promotional content",
-      fields: [
-        {
-          id: "screenshots-6-7",
-          label: "iPhone 6.7\" Screenshots",
-          description: "Required: 3-10 screenshots for iPhone 15 Pro Max, 14 Plus, etc.",
-          type: "file",
-          status: { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "screenshots-6-5",
-          label: "iPhone 6.5\" Screenshots",
-          description: "Required: 3-10 screenshots for iPhone 11 Pro Max, XS Max, etc.",
-          type: "file",
-          status: { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "screenshots-ipad",
-          label: "iPad Screenshots",
-          description: "Required if your app runs on iPad",
-          type: "file",
-          status: { status: "needs-input" },
-        },
-        {
-          id: "app-preview",
-          label: "App Preview Video",
-          description: "Optional video showing your app in action (15-30 seconds)",
-          type: "file",
-          status: { status: "optional" },
-        },
-        {
-          id: "promotional-text",
-          label: "Promotional Text",
-          description: "Text that appears above your description (max 170 characters). Can be updated without new submission.",
-          type: "textarea",
-          status: getFieldStatus("promotional-text", "promotionalText"),
-          copyable: true,
-        },
-        {
-          id: "description",
-          label: "Description",
-          description: "Detailed description of your app (max 4000 characters)",
-          type: "textarea",
-          status: getFieldStatus("description", "appDescription"),
-          required: true,
-          copyable: true,
-        },
-        {
-          id: "keywords",
-          label: "Keywords",
-          description: "Keywords for App Store search (max 100 characters, comma separated)",
-          type: "text",
-          status: getFieldStatus("keywords", "keywords"),
-          required: true,
-          copyable: true,
-        },
-        {
-          id: "support-url",
-          label: "Support URL",
-          description: "URL for customer support",
-          type: "url",
-          status: getFieldStatus("support-url", "supportUrl", true),
-          required: true,
-          copyable: true,
-        },
-        {
-          id: "marketing-url",
-          label: "Marketing URL",
-          description: "URL to your app's marketing page",
-          type: "url",
-          status: getFieldStatus("marketing-url", "marketingUrl"),
-          copyable: true,
-        },
-        {
-          id: "whats-new",
-          label: "What's New",
-          description: "Describe what's new in this version",
-          type: "textarea",
-          status: getFieldStatus("whats-new", "whatsNew"),
-          required: true,
-          copyable: true,
-        },
-      ],
-    },
+function generateCopyright(scanData: ScanData): string {
+  const year = new Date().getFullYear();
+  const appName = scanData.appName || "App";
+  return `${year} ${appName}`;
+}
 
-    // =========================================================================
-    // App Review Information
-    // =========================================================================
-    {
-      id: "app-review",
-      title: "App Review Information",
-      icon: "👁️",
-      ascPath: `${baseUrl}/distribution/ios/version/inflight`,
-      description: "Information for App Review team",
-      fields: [
-        {
-          id: "sign-in-required",
-          label: "Sign-In Required",
-          description: "Does your app require sign-in to access features?",
-          type: "select",
-          status: scanResult?.findings.some(f => f.id.includes("AUTHENTICATION"))
-            ? { status: "from-scan", value: "Yes - authentication detected" }
-            : { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "demo-username",
-          label: "Demo Account Username",
-          description: "Username for App Review team to test sign-in features",
-          type: "text",
-          status: scanResult?.findings.some(f => f.id.includes("AUTHENTICATION"))
-            ? { status: "from-scan", placeholder: "Required - provide test credentials" }
-            : { status: "optional" },
-          copyable: true,
-        },
-        {
-          id: "demo-password",
-          label: "Demo Account Password",
-          description: "Password for the demo account",
-          type: "text",
-          status: scanResult?.findings.some(f => f.id.includes("AUTHENTICATION"))
-            ? { status: "from-scan", placeholder: "Required - provide test credentials" }
-            : { status: "optional" },
-          copyable: true,
-        },
-        {
-          id: "review-notes",
-          label: "Notes for Review",
-          description: "Additional information for the App Review team",
-          type: "textarea",
-          status: getFieldStatus("review-notes", "reviewerNotes", true),
-          copyable: true,
-        },
-        {
-          id: "review-attachment",
-          label: "Attachment",
-          description: "Optional file attachment for reviewers (e.g., demo video)",
-          type: "file",
-          status: { status: "optional" },
-        },
-      ],
-    },
-
-    // =========================================================================
-    // Export Compliance
-    // =========================================================================
-    {
-      id: "export-compliance",
-      title: "Export Compliance",
-      icon: "🌍",
-      ascPath: `${baseUrl}/distribution/encryption`,
-      description: "Encryption and export compliance declarations",
-      fields: [
-        {
-          id: "uses-encryption",
-          label: "Uses Encryption",
-          description: "Does your app use encryption?",
-          type: "select",
-          status: scanResult?.findings.some(f => f.id.includes("EXPORT"))
-            ? { status: "from-scan", value: "Review required - see guidance" }
-            : { status: "needs-input" },
-          required: true,
-        },
-        {
-          id: "encryption-exempt",
-          label: "Encryption Exemption",
-          description: "Does your encryption qualify for an exemption?",
-          type: "select",
-          status: getFieldStatus("encryption-exempt", "exportCompliance", true),
-        },
-      ],
-    },
-
-    // =========================================================================
-    // Age Rating
-    // =========================================================================
-    {
-      id: "age-rating",
-      title: "Age Rating",
-      icon: "🔞",
-      ascPath: `${baseUrl}/distribution/ageRatings`,
-      description: "Content rating questionnaire",
-      fields: [
-        {
-          id: "age-rating-questionnaire",
-          label: "Age Rating Questionnaire",
-          description: "Answer questions about your app's content to receive an age rating",
-          type: "select",
-          status: { status: "needs-input" },
-          required: true,
-        },
-      ],
-    },
-  ];
+function generateWhatsNew(version: string): string {
+  return `Version ${version || "1.0"} includes:\n• Bug fixes and performance improvements\n• Enhanced user experience\n• Stability improvements`;
 }
 
 // =============================================================================
 // COPY BUTTON COMPONENT
 // =============================================================================
 
-function CopyButton({ text, label }: { text: string; label?: string }) {
+function CopyButton({ text, onCopy }: { text: string; onCopy?: () => void }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
+    if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      onCopy?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       console.error("Failed to copy");
@@ -436,10 +194,13 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   return (
     <button
       onClick={handleCopy}
+      disabled={!text}
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
         copied
-          ? "bg-green-100 text-green-700 border border-green-300"
-          : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+          ? "bg-green-100 text-green-700"
+          : text
+          ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+          : "bg-gray-100 text-gray-400 cursor-not-allowed"
       }`}
     >
       {copied ? (
@@ -454,7 +215,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
-          {label || "Copy"}
+          Copy
         </>
       )}
     </button>
@@ -462,116 +223,134 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
 }
 
 // =============================================================================
-// STATUS BADGE COMPONENT
-// =============================================================================
-
-function StatusBadge({ status }: { status: FieldStatus["status"] }) {
-  const config = {
-    complete: {
-      bg: "bg-green-100",
-      text: "text-green-800",
-      border: "border-green-200",
-      label: "Ready",
-      icon: "✓",
-    },
-    "from-scan": {
-      bg: "bg-amber-100",
-      text: "text-amber-800",
-      border: "border-amber-200",
-      label: "From Scan",
-      icon: "⚡",
-    },
-    "needs-input": {
-      bg: "bg-red-100",
-      text: "text-red-800",
-      border: "border-red-200",
-      label: "Required",
-      icon: "!",
-    },
-    optional: {
-      bg: "bg-gray-100",
-      text: "text-gray-600",
-      border: "border-gray-200",
-      label: "Optional",
-      icon: "○",
-    },
-  };
-
-  const c = config[status];
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${c.bg} ${c.text} ${c.border} border`}>
-      <span>{c.icon}</span>
-      {c.label}
-    </span>
-  );
-}
-
-// =============================================================================
 // FIELD COMPONENT
 // =============================================================================
 
-function FormField({ field, onValueChange }: { 
-  field: SectionField; 
-  onValueChange: (id: string, value: string) => void;
-}) {
-  const [localValue, setLocalValue] = useState(field.status.value || "");
+interface FieldProps {
+  label: string;
+  description?: string;
+  required?: boolean;
+  maxLength?: number;
+  type?: "text" | "textarea" | "url" | "select" | "password";
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  suggestion?: string;
+  onUseSuggestion?: () => void;
+  selectOptions?: { value: string; label: string }[];
+  rows?: number;
+  showCopy?: boolean;
+  status?: "complete" | "suggested" | "needs-input" | "optional";
+}
 
-  const handleChange = (value: string) => {
-    setLocalValue(value);
-    onValueChange(field.id, value);
-  };
-
+function Field({
+  label,
+  description,
+  required,
+  maxLength,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  suggestion,
+  onUseSuggestion,
+  selectOptions,
+  rows = 4,
+  showCopy = true,
+  status = "needs-input",
+}: FieldProps) {
+  const charCount = value?.length || 0;
+  const isOverLimit = maxLength && charCount > maxLength;
+  
+  const actualStatus = value ? (suggestion && value === suggestion ? "suggested" : "complete") : status;
+  
   const borderColor = {
-    complete: "border-green-300 bg-green-50",
-    "from-scan": "border-amber-300 bg-amber-50",
-    "needs-input": "border-red-300 bg-red-50",
-    optional: "border-gray-200 bg-white",
-  }[field.status.status];
+    complete: "border-green-300 bg-green-50/50",
+    suggested: "border-amber-300 bg-amber-50/50",
+    "needs-input": required ? "border-red-300 bg-red-50/50" : "border-gray-200",
+    optional: "border-gray-200",
+  }[actualStatus];
 
   return (
-    <div className={`p-4 rounded-lg border-2 ${borderColor} transition-all`}>
+    <div className={`p-4 rounded-xl border-2 ${borderColor} transition-all`}>
       <div className="flex items-start justify-between gap-4 mb-2">
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <label className="font-medium text-gray-900">{field.label}</label>
-            {field.required && <span className="text-red-500 text-sm">*</span>}
-            <StatusBadge status={field.status.status} />
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="font-semibold text-gray-900">{label}</label>
+            {required && <span className="text-red-500 text-sm font-bold">*</span>}
+            {maxLength && (
+              <span className={`text-xs ${isOverLimit ? "text-red-600 font-bold" : "text-gray-500"}`}>
+                {charCount}/{maxLength}
+              </span>
+            )}
+            {actualStatus === "complete" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                ✓ Ready
+              </span>
+            )}
+            {actualStatus === "suggested" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
+                ⚡ Suggested
+              </span>
+            )}
           </div>
-          {field.description && (
-            <p className="text-sm text-gray-600 mt-1">{field.description}</p>
+          {description && (
+            <p className="text-sm text-gray-600 mt-1">{description}</p>
           )}
         </div>
-        {field.copyable && localValue && (
-          <CopyButton text={localValue} />
-        )}
+        {showCopy && value && <CopyButton text={value} />}
       </div>
 
-      {field.type === "textarea" ? (
+      {/* Suggestion banner */}
+      {suggestion && !value && (
+        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-blue-900 mb-1">💡 Suggested content:</p>
+              <p className="text-sm text-blue-800 whitespace-pre-wrap line-clamp-4">{suggestion}</p>
+            </div>
+            <button
+              onClick={onUseSuggestion}
+              className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Use This
+            </button>
+          </div>
+        </div>
+      )}
+
+      {type === "textarea" ? (
         <textarea
-          value={localValue}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder={field.status.placeholder || `Enter ${field.label.toLowerCase()}...`}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
+            isOverLimit ? "border-red-500" : "border-gray-300"
+          }`}
         />
-      ) : field.type === "url" || field.type === "text" ? (
+      ) : type === "select" ? (
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+        >
+          <option value="">Select...</option>
+          {selectOptions?.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      ) : (
         <input
-          type={field.type}
-          value={localValue}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder={field.status.placeholder || `Enter ${field.label.toLowerCase()}...`}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2"
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
+            isOverLimit ? "border-red-500" : "border-gray-300"
+          }`}
         />
-      ) : field.type === "file" ? (
-        <div className="mt-2 p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-sm text-gray-500">
-          <span>📁 Upload in App Store Connect</span>
-        </div>
-      ) : field.type === "select" ? (
-        <div className="mt-2 p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
-          <span>↗️ Select in App Store Connect</span>
-        </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -580,127 +359,163 @@ function FormField({ field, onValueChange }: {
 // SECTION COMPONENT
 // =============================================================================
 
-function FormSectionComponent({ 
-  section, 
-  isExpanded, 
-  onToggle,
-  onValueChange,
+function Section({ 
+  title, 
+  icon, 
+  children, 
+  ascUrl,
+  description,
 }: { 
-  section: FormSection; 
-  isExpanded: boolean;
-  onToggle: () => void;
-  onValueChange: (fieldId: string, value: string) => void;
+  title: string; 
+  icon: string; 
+  children: React.ReactNode;
+  ascUrl?: string;
+  description?: string;
 }) {
-  const stats = useMemo(() => {
-    const required = section.fields.filter(f => f.required);
-    const complete = section.fields.filter(f => 
-      f.status.status === "complete" || f.status.status === "from-scan"
-    );
-    const needsInput = section.fields.filter(f => 
-      f.status.status === "needs-input" && f.required
-    );
-    return { total: section.fields.length, complete: complete.length, needsInput: needsInput.length, required: required.length };
-  }, [section.fields]);
-
-  const sectionStatus = stats.needsInput > 0 ? "incomplete" : "complete";
-
   return (
-    <div className={`border rounded-xl overflow-hidden transition-all ${
-      sectionStatus === "complete" ? "border-green-200" : "border-gray-200"
-    }`}>
-      {/* Section Header */}
-      <button
-        onClick={onToggle}
-        className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${
-          sectionStatus === "complete" 
-            ? "bg-green-50 hover:bg-green-100" 
-            : "bg-white hover:bg-gray-50"
-        }`}
-      >
-        <div className="flex items-center gap-4">
-          <span className="text-2xl">{section.icon}</span>
-          <div className="text-left">
-            <h3 className="font-semibold text-gray-900">{section.title}</h3>
-            <p className="text-sm text-gray-600">{section.description}</p>
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{icon}</span>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+              {description && <p className="text-sm text-gray-600">{description}</p>}
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          {/* Progress indicator */}
-          <div className="flex items-center gap-2 text-sm">
-            {sectionStatus === "complete" ? (
-              <span className="flex items-center gap-1 text-green-600 font-medium">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                Ready
-              </span>
-            ) : (
-              <span className="text-gray-500">
-                {stats.complete}/{stats.total} fields
-              </span>
-            )}
-          </div>
-          
-          {/* Chevron */}
-          <svg
-            className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
-
-      {/* Section Content */}
-      {isExpanded && (
-        <div className="p-6 bg-gray-50 border-t border-gray-200">
-          {/* Open in ASC button */}
-          <div className="mb-6 flex justify-end">
-            <a
-              href={section.ascPath}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+          {ascUrl && (
+            <button
+              onClick={() => window.open(ascUrl, "storepreflight_asc_window", "noopener")}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
-              Open in App Store Connect
+              Open in ASC
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
-            </a>
-          </div>
-
-          {/* Fields */}
-          <div className="space-y-4">
-            {section.fields.map((field) => (
-              <FormField
-                key={field.id}
-                field={field}
-                onValueChange={onValueChange}
-              />
-            ))}
-          </div>
+            </button>
+          )}
         </div>
-      )}
+      </div>
+      <div className="p-6 space-y-4">
+        {children}
+      </div>
     </div>
   );
 }
 
 // =============================================================================
-// MAIN PAGE COMPONENT
+// COPY ALL BUTTON
+// =============================================================================
+
+function CopyAllButton({ formData, scanData }: { formData: FormData; scanData: ScanData }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAll = async () => {
+    const text = `
+APP STORE SUBMISSION DATA
+========================
+
+APP NAME: ${scanData.appName || "[Not detected]"}
+VERSION: ${formData.version}
+BUNDLE ID: ${scanData.bundleId || "[Not detected]"}
+
+PROMOTIONAL TEXT (170 chars):
+${formData.promotionalText}
+
+DESCRIPTION (4000 chars):
+${formData.description}
+
+KEYWORDS (100 chars):
+${formData.keywords}
+
+WHAT'S NEW:
+${formData.whatsNew}
+
+SUPPORT URL: ${formData.supportUrl}
+MARKETING URL: ${formData.marketingUrl || "[Optional]"}
+
+COPYRIGHT: ${formData.copyright}
+
+REVIEWER NOTES:
+${formData.reviewNotes}
+
+${formData.signInRequired === "yes" ? `DEMO CREDENTIALS:
+Username: ${formData.demoUsername}
+Password: ${formData.demoPassword}` : "SIGN-IN: Not required"}
+
+CONTACT INFO:
+${formData.contactFirstName} ${formData.contactLastName}
+${formData.contactPhone}
+${formData.contactEmail}
+`.trim();
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      console.error("Failed to copy");
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopyAll}
+      className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+        copied
+          ? "bg-green-600 text-white"
+          : "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+      }`}
+    >
+      {copied ? (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          All Content Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Copy All Content
+        </>
+      )}
+    </button>
+  );
+}
+
+// =============================================================================
+// MAIN PAGE
 // =============================================================================
 
 export default function SubmissionPreviewPage() {
-  const router = useRouter();
-  const [consoleConfig, setConsoleConfig] = useState<ConsoleConfig | null>(null);
-  const [scanResult, setScanResult] = useState<ScanResultData | null>(null);
-  const [sessionData, setSessionData] = useState<Record<string, string>>({});
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["app-info"]));
   const [isLoading, setIsLoading] = useState(true);
+  const [consoleConfig, setConsoleConfig] = useState<ConsoleConfig | null>(null);
+  const [scanData, setScanData] = useState<ScanData>({});
+  const [formData, setFormData] = useState<FormData>({
+    promotionalText: "",
+    description: "",
+    keywords: "",
+    whatsNew: "",
+    supportUrl: "",
+    marketingUrl: "",
+    version: "",
+    copyright: "",
+    signInRequired: "",
+    demoUsername: "",
+    demoPassword: "",
+    contactFirstName: "",
+    contactLastName: "",
+    contactPhone: "",
+    contactEmail: "",
+    reviewNotes: "",
+    releaseType: "immediate",
+    phasedRelease: false,
+  });
 
-  // Load data from localStorage
+  // Load saved data
   useEffect(() => {
     try {
       // Load console config
@@ -709,27 +524,31 @@ export default function SubmissionPreviewPage() {
         setConsoleConfig(JSON.parse(configStr));
       }
 
-      // Load scan result
+      // Load scan data
       const scanStr = localStorage.getItem(STORAGE_KEYS.SCAN_RESULT);
       if (scanStr) {
-        const { result } = JSON.parse(scanStr);
-        setScanResult(result);
+        const { result, scanResult } = JSON.parse(scanStr);
+        // Try to extract app info from scan result
+        const appData: ScanData = {
+          appName: scanResult?.appJson?.name || scanResult?.appJson?.expo?.name || scanResult?.packageJson?.name,
+          version: scanResult?.appJson?.version || scanResult?.appJson?.expo?.version || scanResult?.packageJson?.version || "1.0.0",
+          bundleId: scanResult?.appJson?.expo?.ios?.bundleIdentifier || scanResult?.appJson?.ios?.bundleIdentifier,
+          capabilities: result?.capabilities || [],
+        };
+        setScanData(appData);
+        
+        // Pre-fill form with detected data
+        setFormData(prev => ({
+          ...prev,
+          version: appData.version || prev.version,
+          signInRequired: appData.capabilities?.includes("authentication") ? "yes" : "",
+        }));
       }
 
-      // Load session data (generated copy)
-      const sessionStr = localStorage.getItem(STORAGE_KEYS.SESSION);
-      if (sessionStr) {
-        const session = JSON.parse(sessionStr);
-        if (session.generatedCopy) {
-          setSessionData(session.generatedCopy);
-        }
-      }
-
-      // Load any saved preview data
-      const previewStr = localStorage.getItem(STORAGE_KEYS.PREVIEW_DATA);
-      if (previewStr) {
-        const previewData = JSON.parse(previewStr);
-        setSessionData(prev => ({ ...prev, ...previewData }));
+      // Load saved form data
+      const formStr = localStorage.getItem(STORAGE_KEYS.FORM_DATA);
+      if (formStr) {
+        setFormData(prev => ({ ...prev, ...JSON.parse(formStr) }));
       }
     } catch (err) {
       console.error("Failed to load data:", err);
@@ -738,66 +557,59 @@ export default function SubmissionPreviewPage() {
     }
   }, []);
 
-  // Handle field value changes
-  const handleValueChange = useCallback((fieldId: string, value: string) => {
-    setSessionData(prev => {
-      const updated = { ...prev, [fieldId]: value };
-      // Save to localStorage
-      localStorage.setItem(STORAGE_KEYS.PREVIEW_DATA, JSON.stringify(updated));
+  // Save form data on change
+  const updateFormData = useCallback((key: keyof FormData, value: string | boolean) => {
+    setFormData(prev => {
+      const updated = { ...prev, [key]: value };
+      localStorage.setItem(STORAGE_KEYS.FORM_DATA, JSON.stringify(updated));
       return updated;
     });
   }, []);
 
-  // Toggle section expansion
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => {
-      const next = new Set(prev);
-      if (next.has(sectionId)) {
-        next.delete(sectionId);
-      } else {
-        next.add(sectionId);
-      }
-      return next;
-    });
-  }, []);
+  // Generate suggestions
+  const suggestions = useMemo(() => ({
+    description: generateDescription(scanData, ""),
+    keywords: generateKeywords(scanData),
+    promotionalText: generatePromotionalText(scanData),
+    reviewerNotes: generateReviewerNotes(scanData),
+    copyright: generateCopyright(scanData),
+    whatsNew: generateWhatsNew(formData.version),
+  }), [scanData, formData.version]);
 
-  // Expand all sections
-  const expandAll = useCallback(() => {
-    setExpandedSections(new Set(sections.map(s => s.id)));
-  }, []);
+  // Calculate completion
+  const completion = useMemo(() => {
+    const required = [
+      formData.description,
+      formData.keywords,
+      formData.supportUrl,
+      formData.version,
+      formData.copyright,
+      formData.signInRequired,
+      formData.contactFirstName,
+      formData.contactLastName,
+      formData.contactPhone,
+      formData.contactEmail,
+    ];
+    const filled = required.filter(v => v && v.length > 0).length;
+    
+    // Check demo creds if sign-in required
+    let total = required.length;
+    let extra = filled;
+    if (formData.signInRequired === "yes") {
+      total += 2;
+      if (formData.demoUsername) extra++;
+      if (formData.demoPassword) extra++;
+    }
+    
+    return { filled: extra, total, percent: Math.round((extra / total) * 100) };
+  }, [formData]);
 
-  // Collapse all sections
-  const collapseAll = useCallback(() => {
-    setExpandedSections(new Set());
-  }, []);
-
-  // Build form sections
-  const sections = useMemo(() => {
-    if (!consoleConfig) return [];
-    return buildAppleFormSections(consoleConfig.appId, scanResult, sessionData);
-  }, [consoleConfig, scanResult, sessionData]);
-
-  // Calculate overall progress
-  const overallProgress = useMemo(() => {
-    const allFields = sections.flatMap(s => s.fields);
-    const required = allFields.filter(f => f.required);
-    const complete = allFields.filter(f => 
-      f.status.status === "complete" || f.status.status === "from-scan"
-    );
-    const fromScan = allFields.filter(f => f.status.status === "from-scan");
-    return {
-      total: allFields.length,
-      required: required.length,
-      complete: complete.length,
-      fromScan: fromScan.length,
-      percent: Math.round((complete.length / Math.max(required.length, 1)) * 100),
-    };
-  }, [sections]);
+  const baseUrl = consoleConfig ? `https://appstoreconnect.apple.com/apps/${consoleConfig.appId}` : "";
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand border-t-transparent" />
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent" />
       </div>
     );
   }
@@ -806,23 +618,23 @@ export default function SubmissionPreviewPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="max-w-4xl mx-auto px-4 py-12">
+        <main className="max-w-2xl mx-auto px-4 py-16">
           <div className="text-center">
-            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">⚠️</span>
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl">⚠️</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Configure App Store Connect First
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">
+              Set Up App Store Connect First
             </h1>
-            <p className="text-gray-600 mb-6">
-              To use the Submission Preview, you need to configure your App Store Connect URL first.
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              To use the Submission Preview, you need to configure your App Store Connect URL. This lets us generate direct links to each section.
             </p>
             <Link
               href="/guided/apple"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors font-medium"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold"
             >
-              Go to Guided Submission
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              Configure Now
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
@@ -833,134 +645,378 @@ export default function SubmissionPreviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <Header />
       
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {/* Page Header */}
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/guided/apple" className="hover:text-brand">Guided Submission</Link>
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+            <Link href="/guided/apple" className="hover:text-blue-600">Guided Submission</Link>
             <span>/</span>
-            <span>Submission Preview</span>
+            <span className="text-gray-900">Submission Preview</span>
           </div>
-          <div className="flex items-start justify-between">
+          
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                 <span className="text-4xl">🍎</span>
-                App Store Submission Preview
+                {scanData.appName || "Your App"} - Submission
               </h1>
               <p className="text-gray-600 mt-2">
-                Review and prepare all fields before submitting to App Store Connect
+                Prepare everything here, then copy to App Store Connect
               </p>
+              {scanData.bundleId && (
+                <p className="text-sm text-gray-500 mt-1 font-mono">{scanData.bundleId}</p>
+              )}
             </div>
             
-            {/* Quick actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={expandAll}
-                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Expand All
-              </button>
-              <button
-                onClick={collapseAll}
-                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Collapse All
-              </button>
-            </div>
+            <CopyAllButton formData={formData} scanData={scanData} />
           </div>
         </div>
 
-        {/* Progress Overview */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Submission Readiness</h2>
-            <span className="text-2xl font-bold text-brand">{overallProgress.percent}%</span>
+        {/* Progress Bar */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900">Submission Readiness</h3>
+            <span className={`text-2xl font-bold ${completion.percent === 100 ? "text-green-600" : "text-blue-600"}`}>
+              {completion.percent}%
+            </span>
           </div>
-          
-          {/* Progress bar */}
-          <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-4">
+          <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-brand to-green-500 transition-all duration-500"
-              style={{ width: `${overallProgress.percent}%` }}
+              className={`h-full transition-all duration-500 ${
+                completion.percent === 100 
+                  ? "bg-gradient-to-r from-green-500 to-emerald-500" 
+                  : "bg-gradient-to-r from-blue-500 to-purple-500"
+              }`}
+              style={{ width: `${completion.percent}%` }}
             />
           </div>
-          
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="p-3 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{overallProgress.complete}</div>
-              <div className="text-sm text-green-700">Fields Ready</div>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <div className="text-2xl font-bold text-amber-600">{overallProgress.fromScan}</div>
-              <div className="text-sm text-amber-700">From Scan</div>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-600">{overallProgress.required - overallProgress.complete}</div>
-              <div className="text-sm text-gray-700">Needs Input</div>
-            </div>
-          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            {completion.filled} of {completion.total} required fields completed
+          </p>
         </div>
 
-        {/* Legend */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-8">
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span className="font-medium text-gray-700">Field Status:</span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded bg-green-400" />
-              Ready to submit
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded bg-amber-400" />
-              Generated from scan
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded bg-red-400" />
-              Needs your input
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded bg-gray-300" />
-              Optional
-            </span>
+        {/* App Info Banner */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 mb-8 text-white shadow-lg">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-blue-100 text-sm mb-1">Detected from your project</p>
+              <h2 className="text-2xl font-bold">{scanData.appName || "App Name Not Detected"}</h2>
+              <p className="text-blue-100 mt-1">Version {formData.version || scanData.version || "1.0.0"}</p>
+            </div>
+            {scanData.capabilities && scanData.capabilities.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {scanData.capabilities.slice(0, 5).map(cap => (
+                  <span key={cap} className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                    {cap.replace(/_/g, " ")}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Form Sections */}
-        <div className="space-y-4">
-          {sections.map((section) => (
-            <FormSectionComponent
-              key={section.id}
-              section={section}
-              isExpanded={expandedSections.has(section.id)}
-              onToggle={() => toggleSection(section.id)}
-              onValueChange={handleValueChange}
+        <div className="space-y-8">
+          
+          {/* Localizable Information */}
+          <Section
+            title="App Store Listing"
+            icon="📱"
+            description="This is what users see on the App Store"
+            ascUrl={`${baseUrl}/distribution/ios/version/inflight`}
+          >
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+              <p className="text-sm text-amber-800">
+                <strong>📸 Screenshots:</strong> Upload these directly in App Store Connect. 
+                You&apos;ll need 6.7&quot; iPhone screenshots (required) and iPad screenshots (if universal app).
+              </p>
+            </div>
+            
+            <Field
+              label="Promotional Text"
+              description="Appears above your description. Can be changed anytime without a new version."
+              maxLength={170}
+              type="textarea"
+              rows={2}
+              value={formData.promotionalText}
+              onChange={(v) => updateFormData("promotionalText", v)}
+              placeholder="Highlight a feature, promotion, or update..."
+              suggestion={suggestions.promotionalText}
+              onUseSuggestion={() => updateFormData("promotionalText", suggestions.promotionalText)}
+              status="optional"
             />
-          ))}
+            
+            <Field
+              label="Description"
+              description="Explain what your app does and why users should download it."
+              required
+              maxLength={4000}
+              type="textarea"
+              rows={8}
+              value={formData.description}
+              onChange={(v) => updateFormData("description", v)}
+              placeholder="Describe your app's features and benefits..."
+              suggestion={suggestions.description}
+              onUseSuggestion={() => updateFormData("description", suggestions.description)}
+            />
+            
+            <Field
+              label="Keywords"
+              description="Comma-separated words that help users find your app."
+              required
+              maxLength={100}
+              value={formData.keywords}
+              onChange={(v) => updateFormData("keywords", v)}
+              placeholder="keyword1,keyword2,keyword3..."
+              suggestion={suggestions.keywords}
+              onUseSuggestion={() => updateFormData("keywords", suggestions.keywords)}
+            />
+            
+            <Field
+              label="What's New"
+              description="What's new in this version. Shows on your app's page."
+              type="textarea"
+              rows={4}
+              value={formData.whatsNew}
+              onChange={(v) => updateFormData("whatsNew", v)}
+              placeholder="Describe changes in this version..."
+              suggestion={suggestions.whatsNew}
+              onUseSuggestion={() => updateFormData("whatsNew", suggestions.whatsNew)}
+              status="optional"
+            />
+            
+            <Field
+              label="Support URL"
+              description="Where users can get help with your app."
+              required
+              type="url"
+              value={formData.supportUrl}
+              onChange={(v) => updateFormData("supportUrl", v)}
+              placeholder="https://yourwebsite.com/support"
+            />
+            
+            <Field
+              label="Marketing URL"
+              description="Your app's marketing page (optional)."
+              type="url"
+              value={formData.marketingUrl}
+              onChange={(v) => updateFormData("marketingUrl", v)}
+              placeholder="https://yourwebsite.com/app"
+              status="optional"
+            />
+          </Section>
+
+          {/* General Information */}
+          <Section
+            title="General Information"
+            icon="ℹ️"
+            ascUrl={`${baseUrl}/distribution/ios/version/inflight`}
+          >
+            <Field
+              label="Version"
+              description="The version number for this release (e.g., 1.0, 1.0.1)."
+              required
+              value={formData.version}
+              onChange={(v) => updateFormData("version", v)}
+              placeholder="1.0.0"
+            />
+            
+            <Field
+              label="Copyright"
+              description="The copyright holder and year."
+              required
+              value={formData.copyright}
+              onChange={(v) => updateFormData("copyright", v)}
+              placeholder="2024 Your Company Name"
+              suggestion={suggestions.copyright}
+              onUseSuggestion={() => updateFormData("copyright", suggestions.copyright)}
+            />
+          </Section>
+
+          {/* App Review Information */}
+          <Section
+            title="App Review Information"
+            icon="👁️"
+            description="Help the review team test your app"
+            ascUrl={`${baseUrl}/distribution/ios/version/inflight`}
+          >
+            <Field
+              label="Sign-in Required?"
+              description="Does your app require users to sign in to access features?"
+              required
+              type="select"
+              value={formData.signInRequired}
+              onChange={(v) => updateFormData("signInRequired", v)}
+              selectOptions={[
+                { value: "no", label: "No - All features are accessible without signing in" },
+                { value: "yes", label: "Yes - Sign-in is required for some features" },
+              ]}
+              showCopy={false}
+            />
+            
+            {formData.signInRequired === "yes" && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4">
+                <p className="text-sm text-blue-800 font-medium">
+                  🔑 Provide demo credentials for the App Review team:
+                </p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field
+                    label="Demo Username"
+                    required
+                    value={formData.demoUsername}
+                    onChange={(v) => updateFormData("demoUsername", v)}
+                    placeholder="demo@example.com"
+                  />
+                  <Field
+                    label="Demo Password"
+                    required
+                    type="password"
+                    value={formData.demoPassword}
+                    onChange={(v) => updateFormData("demoPassword", v)}
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+            )}
+            
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <p className="text-sm font-medium text-gray-700 mb-3">Contact Information</p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field
+                  label="First Name"
+                  required
+                  value={formData.contactFirstName}
+                  onChange={(v) => updateFormData("contactFirstName", v)}
+                  placeholder="John"
+                />
+                <Field
+                  label="Last Name"
+                  required
+                  value={formData.contactLastName}
+                  onChange={(v) => updateFormData("contactLastName", v)}
+                  placeholder="Doe"
+                />
+                <Field
+                  label="Phone Number"
+                  required
+                  value={formData.contactPhone}
+                  onChange={(v) => updateFormData("contactPhone", v)}
+                  placeholder="+1 555-123-4567"
+                />
+                <Field
+                  label="Email"
+                  required
+                  value={formData.contactEmail}
+                  onChange={(v) => updateFormData("contactEmail", v)}
+                  placeholder="john@company.com"
+                />
+              </div>
+            </div>
+            
+            <Field
+              label="Notes for Review"
+              description="Any additional information to help the review team test your app."
+              type="textarea"
+              rows={6}
+              value={formData.reviewNotes}
+              onChange={(v) => updateFormData("reviewNotes", v)}
+              placeholder="Instructions or context for the review team..."
+              suggestion={suggestions.reviewerNotes}
+              onUseSuggestion={() => updateFormData("reviewNotes", suggestions.reviewerNotes)}
+              status="optional"
+            />
+          </Section>
+
+          {/* Version Release */}
+          <Section
+            title="Version Release"
+            icon="🚀"
+            ascUrl={`${baseUrl}/distribution/ios/version/inflight`}
+          >
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700">When should this version be released?</p>
+              
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="releaseType"
+                  checked={formData.releaseType === "manual"}
+                  onChange={() => updateFormData("releaseType", "manual")}
+                  className="mt-1"
+                />
+                <div>
+                  <p className="font-medium text-gray-900">Manually release this version</p>
+                  <p className="text-sm text-gray-600">You&apos;ll publish it yourself after approval</p>
+                </div>
+              </label>
+              
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="releaseType"
+                  checked={formData.releaseType === "immediate"}
+                  onChange={() => updateFormData("releaseType", "immediate")}
+                  className="mt-1"
+                />
+                <div>
+                  <p className="font-medium text-gray-900">Automatically release after approval</p>
+                  <p className="text-sm text-gray-600">Goes live as soon as it&apos;s approved</p>
+                </div>
+              </label>
+              
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="releaseType"
+                  checked={formData.releaseType === "scheduled"}
+                  onChange={() => updateFormData("releaseType", "scheduled")}
+                  className="mt-1"
+                />
+                <div>
+                  <p className="font-medium text-gray-900">Release on a specific date</p>
+                  <p className="text-sm text-gray-600">Choose a date after approval</p>
+                </div>
+              </label>
+            </div>
+            
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors mt-4">
+              <input
+                type="checkbox"
+                checked={formData.phasedRelease}
+                onChange={(e) => updateFormData("phasedRelease", e.target.checked)}
+                className="w-5 h-5 rounded"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Phased Release</p>
+                <p className="text-sm text-gray-600">Gradually release to users over 7 days (recommended for updates)</p>
+              </div>
+            </label>
+          </Section>
         </div>
 
         {/* Bottom CTA */}
-        <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
-          <div className="flex items-center justify-between">
+        <div className="mt-8 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-8 text-white shadow-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div>
-              <h3 className="font-semibold text-blue-900">Ready to submit?</h3>
-              <p className="text-sm text-blue-700">
-                Open App Store Connect and copy your prepared content into each section.
+              <h3 className="text-xl font-bold mb-2">Ready to Submit?</h3>
+              <p className="text-green-100">
+                {completion.percent === 100 
+                  ? "All required fields are complete! Open App Store Connect and paste your content."
+                  : `Complete ${completion.total - completion.filled} more required fields before submitting.`}
               </p>
             </div>
-            <a
-              href={`https://appstoreconnect.apple.com/apps/${consoleConfig.appId}/distribution/ios/version/inflight`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            <button
+              onClick={() => window.open(`${baseUrl}/distribution/ios/version/inflight`, "storepreflight_asc_window", "noopener")}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-green-700 rounded-xl hover:bg-green-50 transition-colors font-bold text-lg"
             >
               Open App Store Connect
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
-            </a>
+            </button>
           </div>
         </div>
       </main>
